@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
+from homeassistant.const import STATE_ON
 from homeassistant.core import Context, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -311,17 +312,20 @@ class HouseRules:
         return None
 
     def napping(self) -> list[str]:
-        """The rooms having their nap now."""
+        """The rooms having their nap now: a slot of now, or a nap entity that is on."""
         now = dt_util.now()
         day = WEEKDAYS[now.weekday()]
         return [
             name
             for name, room in self.rooms.items()
-            if any(
-                (not nap.get("days") or day in nap["days"]) and in_window(now, nap["start"], nap["end"])
-                for nap in room.get("naps") or []
-            )
+            if any(self._nap_now(nap, now, day) for nap in room.get("naps") or [])
         ]
+
+    def _nap_now(self, nap: str | dict[str, Any], now: datetime, day: str) -> bool:
+        if isinstance(nap, str):
+            state = self.hass.states.get(nap)
+            return state is not None and state.state == STATE_ON
+        return (not nap.get("days") or day in nap["days"]) and in_window(now, nap["start"], nap["end"])
 
     def muted(self, respect: list[str]) -> bool:
         return COND_QUIET in respect and self.quiet()

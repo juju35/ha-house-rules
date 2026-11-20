@@ -35,14 +35,16 @@ RESPECT = vol.All(cv.ensure_list, [vol.In(CONDITIONS)])
 WINDOW = vol.Schema({vol.Required("start"): TIME, vol.Required("end"): TIME})
 PERCENT = vol.All(vol.Coerce(int), vol.Range(min=1, max=100))
 DELAY = vol.All(cv.time_period, vol.Range(min=timedelta(0)))
-# A nap of a room: start, end and optionally the days (every day when none).
-NAP = vol.Schema(
+# A nap of a room: start, end and optionally the days (every day when none) - or an on/off entity (a `schedule`
+# helper shared with other integrations, an input_boolean for an unplanned nap...): a nap while it is on.
+NAP_SLOT = vol.Schema(
     {
         vol.Required("start"): TIME,
         vol.Required("end"): TIME,
         vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
     }
 )
+NAP = vol.Any(cv.entity_id, NAP_SLOT)
 # A time slot of presence lights: some lights (all when none) kept off, or turned on at a brightness / colour, with
 # their own delay before off. The first slot that applies to a light decides.
 SLOT = vol.Schema(

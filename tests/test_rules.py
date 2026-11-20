@@ -691,3 +691,22 @@ rooms:
 """,
     )
     assert manager.napping() == []
+
+
+async def test_naps_entity(hass: HomeAssistant, calls):
+    # A `schedule` helper (shared with other integrations) or an input_boolean: a nap while it is on.
+    hass.states.async_set("schedule.nap_bedroom", "off")
+    hass.states.async_set("input_boolean.nap", "off")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Bedroom: {naps: [schedule.nap_bedroom, input_boolean.nap]}
+""",
+    )
+    assert manager.napping() == []
+    hass.states.async_set("schedule.nap_bedroom", "on")
+    assert manager.napping() == ["Bedroom"]
+    hass.states.async_set("schedule.nap_bedroom", "off")
+    hass.states.async_set("input_boolean.nap", "on")
+    assert manager.blocked_by(["nap"]) == "nap"

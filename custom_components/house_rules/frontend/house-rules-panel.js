@@ -4,11 +4,12 @@
 
 const HOUSE_RULES_PANEL_VERSION = '1.2.0';
 
-// Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00" (days optional), both ways. A part that doesn't
+// Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom" (days optional, an on/off
+// entity such as a `schedule` helper shared with other integrations), both ways. A part that doesn't
 // read is kept as written: saving then shows the validation error.
 const hrpNapsText = (naps) =>
   (Array.isArray(naps) ? naps : [])
-    .map((n) => `${n.days?.length ? `${[].concat(n.days).join(',')} ` : ''}${n.end ? `${String(n.start).slice(0, 5)}-${String(n.end).slice(0, 5)}` : n.start}`)
+    .map((n) => typeof n === 'string' ? n : `${n.days?.length ? `${[].concat(n.days).join(',')} ` : ''}${n.end ? `${String(n.start).slice(0, 5)}-${String(n.end).slice(0, 5)}` : n.start}`)
     .join('; ');
 const hrpNapsParse = (text) =>
   text
@@ -16,6 +17,7 @@ const hrpNapsParse = (text) =>
     .map((part) => part.trim())
     .filter(Boolean)
     .map((part) => {
+      if (/^[a-z_]+\.[a-z0-9_]+$/.test(part)) return part;
       const m = part.match(/^(?:([a-z,\s]+?)\s+)?(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/i);
       if (!m) return { start: part, end: '' };
       const nap = { start: m[2].padStart(5, '0'), end: m[3].padStart(5, '0') };
@@ -2389,7 +2391,7 @@ class HouseRulesPanel extends HTMLElement {
             if (f === 'naps') v = hrpNapsText(v);
             else if (Array.isArray(v)) v = v.join(', ');
             const st = (Array.isArray(room[f]) ? room[f][0] : room[f]) && this._hass.states[Array.isArray(room[f]) ? room[f][0] : room[f]];
-            return `<td><input class="cell" id="room-${i}-${f}" data-room="${i}" data-field="${f}" value="${hrpEsc(v)}" placeholder="${f === 'naps' ? '13:30-15:00; sat,sun 14:00-16:00' : '—'}" aria-label="${hrpEsc(name)} ${this.t(f)}">${st ? `<div class="sub small">${hrpEsc(st.state)}${st.attributes?.unit_of_measurement ? ` ${hrpEsc(st.attributes.unit_of_measurement)}` : ''}</div>` : ''}</td>`;
+            return `<td><input class="cell" id="room-${i}-${f}" data-room="${i}" data-field="${f}" value="${hrpEsc(v)}" placeholder="${f === 'naps' ? '13:30-15:00; schedule.nap_bedroom' : '—'}" aria-label="${hrpEsc(name)} ${this.t(f)}">${st ? `<div class="sub small">${hrpEsc(st.state)}${st.attributes?.unit_of_measurement ? ` ${hrpEsc(st.attributes.unit_of_measurement)}` : ''}</div>` : ''}</td>`;
           })
           .join('');
         return `<tr><td><input class="cell name" id="room-${i}-name" data-room="${i}" data-field="__name" value="${hrpEsc(name)}" aria-label="${this.t('room')}"></td>${cells}<td><button class="rbtn plain" data-remove-room="${i}" aria-label="${this.t('remove')}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></td></tr>`;

@@ -173,7 +173,28 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `climate` | Air conditioner of the room: while it runs, `vacuum_guard` lets the robot clean with the opening open |
 | `presence` | Presence/occupancy `binary_sensor`(s) (`presence_light`): someone is there while one of them is on |
 | `illuminance` | Light level sensor (`dark_below` of `vacuum_follow` / `presence_light`) |
-| `naps` | Nap slots of the room: `start`, `end` and optionally `days` (`mon` … `sun`, every day when none). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: `13:30-15:00; sat,sun 14:00-16:00` |
+| `naps` | Naps of the room: slots (`start`, `end` and optionally `days`, `mon` … `sun`, every day when none) and/or on/off entities (a nap while one is on: a `schedule` helper, an `input_boolean`…). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: `13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom` |
+
+##### Naps shared with other integrations
+
+Define the naps once in a core `schedule` helper and point every integration at it (Smart Comfort reads the same
+entity), so a change applies everywhere:
+
+```yaml
+# configuration.yaml
+schedule:
+  nap_bedroom:
+    name: Bedroom nap
+    monday: [{from: "13:30:00", to: "15:00:00"}]
+    saturday: [{from: "14:00:00", to: "16:00:00"}]
+```
+
+```yaml
+# house_rules.yaml
+rooms:
+  Bedroom:
+    naps: [schedule.nap_bedroom, input_boolean.unplanned_nap]   # a nap while one of them is on
+```
 
 #### Common options of every rule
 
