@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 PANEL = Path(__file__).parents[1] / "custom_components/house_rules/frontend/house-rules-panel.js"
-TABLE = json.loads(re.search(r"const HRP_STRINGS = (\{.*?\n\});", PANEL.read_text(), re.S).group(1))
+TABLE = json.loads(re.search(r"const HRP_STRINGS = (\{.*?\n\});", PANEL.read_text(), re.DOTALL).group(1))
 
 
 def _flat(table, prefix=""):
