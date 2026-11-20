@@ -202,3 +202,78 @@ async def test_quiet_hours_can_be_cleared(hass: HomeAssistant):
     await manager.async_save_section("settings", {"quiet_hours": None})
     assert manager.settings["quiet_hours"] is None
     assert not manager.quiet()
+
+
+SMART_COMFORT_OPTIONS = {
+    "rooms": [
+        {"name": "Bedroom", "lights": ["light.bedroom"], "naps": ["schedule.nap_bedroom"]},
+        {
+            "name": "Entrance",
+            "lights": [{"entity_id": "light.entrance", "night_only": True}],
+            "presence": {
+                "sensors": ["binary_sensor.entrance"],
+                "lights": ["light.entrance", "light.hallway"],
+                "lux": "sensor.entrance_lux",
+                "max_lux": 5.9,
+                "on_after": 5,
+                "off_after": 0.17,
+                "transition": 10,
+                "not_during_naps": ["light.hallway"],
+                "slots": [
+                    {"start": "06:30", "end": "08:00", "days": ["mon", "fri"], "off": True},
+                    {"during_naps": True, "lights": ["light.entrance"], "brightness": 40},
+                    {"start": "17:00", "end": "00:00", "color": [0, 0, 255], "off_after": 22},
+                ],
+            },
+        },
+        {"name": "Living room", "lights": ["light.living"]},
+    ]
+}
+
+
+async def test_import_smart_comfort(hass: HomeAssistant, hass_ws_client):
+    # Smart Comfort's lights on presence, read from its config entry: a presence_light rule per room, with its room
+    # and the naps of the house.
+    entry = await _setup(hass, "rules: []\n")
+    MockConfigEntry(domain="smart_comfort", title="Smart Comfort", options=SMART_COMFORT_OPTIONS).add_to_hass(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "house_rules/import/analyze"})
+    proposals = [p for p in (await client.receive_json())["result"]["proposals"] if p["source"] == "smart_comfort"]
+    assert len(proposals) == 1
+    found = proposals[0]
+    assert found["rule"] == {
+        "id": "presence_entrance",
+        "name": "Entrance",
+        "type": "presence_light",
+        "room": "Entrance",
+        "lights": ["light.entrance", "light.hallway"],
+        "dark_below": 5.9,
+        "on_after": "00:00:05",
+        "off_delay": "00:00:10",
+        "transition": 10.0,
+        "not_during_naps": ["light.hallway"],
+        "slots": [
+            {"start": "06:30", "end": "08:00", "days": ["mon", "fri"], "off": True},
+            {"lights": ["light.entrance"], "brightness": 40, "during_naps": True},
+            {"start": "17:00", "end": "00:00", "color": [0, 0, 255], "off_delay": "00:22:00"},
+        ],
+    }
+    assert found["rooms"] == {
+        "Bedroom": {"lights": ["light.bedroom"], "naps": ["schedule.nap_bedroom"]},
+        "Entrance": {
+            "lights": ["light.entrance"],
+            "presence": ["binary_sensor.entrance"],
+            "illuminance": "sensor.entrance_lux",
+        },
+    }
+    # Applied: a valid rule and its rooms; analysed again, the room is not proposed twice.
+    await client.send_json(
+        {"id": 2, "type": "house_rules/import/apply", "rules": [found["rule"]], "rooms": found["rooms"]}
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    manager = entry.runtime_data
+    assert manager.rules["presence_entrance"].status()["state"] != "error"
+    assert manager.rooms["Bedroom"]["naps"] == ["schedule.nap_bedroom"]
+    await client.send_json({"id": 3, "type": "house_rules/import/analyze"})
+    assert not [p for p in (await client.receive_json())["result"]["proposals"] if p["source"] == "smart_comfort"]

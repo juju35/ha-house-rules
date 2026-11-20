@@ -5,7 +5,7 @@
 //   custom:house-rules-activity-card the journal, filterable
 // One WebSocket subscription (house_rules/subscribe) is shared by every card of the page.
 
-const HR_VERSION = '1.2.0';
+const HR_VERSION = '1.3.0';
 
 const HR_STRINGS = {
   "en": {
