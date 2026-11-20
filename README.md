@@ -405,7 +405,7 @@ Presence in the room turns its lights on when it is dark (below `dark_below`, wi
 | `brightness` | light's own | 1–100 % |
 | `brightness_entity` | none | A sensor or number giving the brightness in % (wins over `brightness`) |
 | `slots` | none | `start` and `end` — or `during_naps: true`: while a room of the house has its nap, the hours following the naps — optional `days` (`mon` … `sun`) and `lights`, then `off: true`, or `brightness` / `color` (RGB), and optionally `off_delay` |
-| `not_during_naps` | none | Lights not turned on while a room of the house has its nap (`rooms[].naps`); `true` for all of the rule's lights |
+| `not_during_naps` | none | Lights not turned on while a room of the house has its nap (`rooms[].naps`), and turned off when a nap starts while they are on; `true` for all of the rule's lights |
 
 ```yaml
 - id: hallway_presence

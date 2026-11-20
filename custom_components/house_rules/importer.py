@@ -8,6 +8,7 @@ is synced into), never imported as code: its lights on presence stay on until re
 from __future__ import annotations
 
 import re
+import unicodedata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -30,6 +31,8 @@ def _room_map(text: str) -> list[tuple[str, str]]:
 
 
 def _slug(text: str) -> str:
+    # Accents folded first: "Entrée" gives entree, not entr_e.
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")[:50] or "rule"
 
 
@@ -187,7 +190,8 @@ def _sc_room(raw: dict[str, Any]) -> dict[str, Any]:
 
 def _sc_slot(raw: dict[str, Any]) -> dict[str, Any]:
     slot = {k: raw[k] for k in ("start", "end", "days", "lights", "brightness", "color", "during_naps") if raw.get(k)}
-    if raw.get("off") or raw.get(False):  # YAML 1.1 reads an unquoted `off:` key as False.
+    # YAML 1.1 reads an unquoted `off:` key as False, which the config entry storage then saves as "false".
+    if raw.get("off") or raw.get(False) or raw.get("false"):
         slot["off"] = True
     if raw.get("off_after") is not None:
         slot["off_delay"] = _hms(float(raw["off_after"]) * 60)
