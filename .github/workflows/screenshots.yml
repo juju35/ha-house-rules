@@ -23,6 +23,9 @@ concurrency:
 jobs:
   screenshots:
     name: Render screenshots
+    # The bot's own screenshots commit re-triggers this workflow: skip it (a skipped job counts as passed),
+    # so a render that is not byte-identical can never loop.
+    if: github.actor != 'juju35-screenshots[bot]'
     runs-on: ubuntu-latest
     # Debian 12 container (Python 3.13 included): apt goes to the Debian mirrors, not the runner's Ubuntu ones, which
     # kept hanging. The job runs as root, hence no sudo below.
@@ -88,13 +91,17 @@ jobs:
           fi
       - name: Commit refreshed screenshots
         if: env.PUSH == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
         run: |
           if [ -z "$(git status --porcelain screenshots)" ]; then
             echo "No screenshot changes."
             exit 0
           fi
-          git config user.name "${{ steps.app.outputs.app-slug }}[bot]"
-          git config user.email "${{ steps.app.outputs.app-slug }}[bot]@users.noreply.github.com"
+          BOT_ID="$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/users/${APP_SLUG}%5Bbot%5D" | grep -m1 -o '"id": *[0-9]*' | grep -o '[0-9]*$')"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${BOT_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
           git add screenshots
           git commit -m "chore: refresh screenshots"
           git push
