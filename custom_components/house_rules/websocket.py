@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from ruamel.yaml import YAML
 
@@ -95,6 +96,8 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
 async def ws_action(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     if (manager := _manager(hass)) is None:
         return _not_loaded(connection, msg)
+    if msg["action"] != "acknowledge" and not connection.user.is_admin:
+        raise Unauthorized
     rule = manager.rules.get(msg["rule"])
     if rule is None:
         connection.send_error(msg["id"], "unknown_rule", msg["rule"])
@@ -280,6 +283,7 @@ async def ws_import_analyze(
     connection.send_result(msg["id"], await analyze(hass, manager))
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/vacation", vol.Required("value"): bool})
 @websocket_api.async_response
 async def ws_vacation(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:

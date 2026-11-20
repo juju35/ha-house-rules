@@ -77,6 +77,7 @@ class YamlSource:
         self.root = path.parent
         self._secrets: dict[str, Any] | None = None
         self.hashes: dict[str, str] = {}
+        self.folders: dict[str, list[str]] = {}  # included folder -> its files at the last read
 
     # ---------- reading ----------
     def exists(self) -> bool:
@@ -128,12 +129,15 @@ class YamlSource:
         if tag == "!include_dir_merge_list":
             if not path.is_dir():
                 raise YamlError(f"folder not found: {target}", str(self.path))
-            return "dir", sorted(path.glob("*.yaml"))
+            files = sorted(path.glob("*.yaml"))
+            self.folders[str(path)] = [str(p) for p in files]
+            return "dir", files
         return None
 
     def load(self) -> Loaded:
         """Read every file; give `id` to the rules that have none (written back right away)."""
         self._secrets = None
+        self.folders = {}
         main = self._read(self.path) or CommentedMap()
         if not isinstance(main, dict):
             raise YamlError("the file must be a mapping (settings, rooms, rules)", str(self.path))
@@ -206,6 +210,8 @@ class YamlSource:
         """A file changed (or appeared/disappeared) since the last read."""
         if not self.hashes:
             return self.exists()
+        if any(sorted(str(p) for p in Path(d).glob("*.yaml")) != files for d, files in self.folders.items()):
+            return True
         return any(file_hash(Path(p)) != h for p, h in self.hashes.items())
 
     def _check(self, path: Path) -> None:

@@ -306,7 +306,191 @@ rules:
     await hass.async_block_till_done()
     rule = manager.rules["panel"]
     assert rule.status()["state"] == "alert"
-    assert not rule.flasher.running
+    # Running (it starts flashing once the quiet hours end) but not a single light call meanwhile.
+    assert rule.flasher.running
+    assert not calls["light.turn_on"]
     hass.states.async_set("binary_sensor.panel", "off")
     await hass.async_block_till_done()
     assert rule.status()["state"] == "armed"
+    assert not rule.flasher.running
+
+
+async def test_resume_ignores_manual_switch_off(hass: HomeAssistant, calls):
+    hass.states.async_set("sensor.progress", "40")
+    hass.states.async_set("switch.dishwasher", "on")
+    await setup(
+        hass,
+        "rules:\n  - id: dw\n    type: appliance_resume\n    switch: switch.dishwasher\n    progress: sensor.progress\n"
+        "    delay: 1\n",
+    )
+    hass.states.async_set("switch.dishwasher", "off")  # cancelled by hand, the progress stays readable
+    await hass.async_block_till_done()
+    later(hass, 2)
+    await hass.async_block_till_done()
+    assert not calls["homeassistant.turn_on"]
+
+
+async def test_notifications_tagged_per_rule(hass: HomeAssistant, calls):
+    hass.states.async_set("sensor.power_a", "0")
+    hass.states.async_set("sensor.power_b", "0")
+    manager = await setup(
+        hass,
+        """
+settings: {notify: notify.phone}
+rules:
+  - {id: washer, type: cycle_done, power_entity: sensor.power_a, done_for: 5}
+  - {id: dryer, type: cycle_done, power_entity: sensor.power_b, done_for: 5}
+""",
+    )
+    await manager.rules["washer"].async_test()
+    await manager.rules["dryer"].async_test()
+    await hass.async_block_till_done()
+    tags = [c.data["data"]["tag"] for c in calls["notify.phone"]]
+    assert tags == ["house_rules_washer", "house_rules_dryer"]
+
+
+async def test_cycle_done_by_power_and_after_restart(hass: HomeAssistant, calls):
+    hass.states.async_set("sensor.power", "0")
+    manager = await setup(
+        hass,
+        "settings: {notify: notify.phone}\nrules:\n  - {id: washer, type: cycle_done, power_entity: sensor.power, "
+        "done_for: 60, message: Done}\n",
+    )
+    hass.states.async_set("sensor.power", "500")
+    await hass.async_block_till_done()
+    assert manager.rules["washer"].phase == "running"
+    hass.states.async_set("sensor.power", "1")
+    await hass.async_block_till_done()
+    # Restart while the power is already low: the wait starts again.
+    await manager.async_reload()
+    await manager.rules["washer"].async_stop()
+    await manager.rules["washer"].async_start()
+    later(hass, 61)
+    await hass.async_block_till_done()
+    assert manager.rules["washer"].phase == "idle"
+    assert calls["notify.phone"][-1].data["message"] == "Done"
+
+
+async def test_auto_off_forgets_entities_that_left_the_rule(hass: HomeAssistant, calls):
+    hass.states.async_set("switch.kettle", "on")
+    manager = await setup(
+        hass, "rules:\n  - id: kettle\n    type: auto_off\n    entity_id: switch.kettle\n    duration: 600\n"
+    )
+    rule = manager.rules["kettle"]
+    later(hass, 16)  # the tick picks up the kettle, already on
+    await hass.async_block_till_done()
+    rule.data["timers"]["switch.gone"] = 0
+    hass.states.async_set("switch.gone", "on")
+    assert [t["entity_id"] for t in rule.timers()] == ["switch.kettle"]
+    assert "switch.gone" not in rule.data["timers"]
+
+
+async def test_vacuum_guard(hass: HomeAssistant, calls):
+    hass.states.async_set("vacuum.robot", "cleaning")
+    hass.states.async_set("sensor.room", "Hall")
+    hass.states.async_set("binary_sensor.kitchen_window", "on")
+    hass.states.async_set("climate.ac", "off")
+    await setup(
+        hass,
+        """
+rooms:
+  Kitchen: {opening: binary_sensor.kitchen_window, climate: climate.ac}
+rules:
+  - {id: guard, type: vacuum_guard, vacuum: vacuum.robot, room_sensor: sensor.room}
+""",
+    )
+    hass.states.async_set("climate.ac", "cool")
+    hass.states.async_set("sensor.room", "Kitchen")
+    await hass.async_block_till_done()
+    assert not calls["vacuum.return_to_base"]  # the air conditioner runs
+    hass.states.async_set("climate.ac", "off")
+    hass.states.async_set("binary_sensor.kitchen_window", "off")
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.kitchen_window", "on")
+    await hass.async_block_till_done()
+    assert calls["vacuum.return_to_base"][-1].data["entity_id"] == "vacuum.robot"
+
+
+async def test_chime_window_and_volume(hass: HomeAssistant, calls):
+    play = async_mock_service(hass, "media_player", "play_media")
+    volume = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("binary_sensor.door", "off")
+    hass.states.async_set("media_player.speaker", "idle", {"volume_level": 0.2})
+    await setup(
+        hass,
+        """
+rules:
+  - id: chime
+    type: sensor_chime
+    trigger: {entity_id: binary_sensor.door}
+    media_player: media_player.speaker
+    media: media-source://chime.mp3
+    volume: 0.4
+    duration: 5
+""",
+    )
+    hass.states.async_set("binary_sensor.door", "unavailable")
+    hass.states.async_set("binary_sensor.door", "on")  # back online: not from off, no ring
+    await hass.async_block_till_done()
+    assert not play
+    hass.states.async_set("binary_sensor.door", "off")
+    hass.states.async_set("binary_sensor.door", "on")
+    await hass.async_block_till_done()
+    assert play[-1].data["media_content_id"] == "media-source://chime.mp3"
+    later(hass, 6)
+    await hass.async_block_till_done()
+    assert [c.data["volume_level"] for c in volume] == [0.4, 0.2]
+
+
+async def test_flash_colour_only_on_colour_lights(hass: HomeAssistant, calls):
+    from custom_components.house_rules.rules.alerts import Flasher
+
+    hass.states.async_set("light.rgb", "off", {"supported_color_modes": ["hs"]})
+    hass.states.async_set("light.white", "off", {"supported_color_modes": ["brightness"]})
+    manager = await setup(hass, "rules: []\n")
+    rule = type("R", (), {"state": lambda self, e: hass.states.get(e), "manager": manager})()
+    assert Flasher(rule, ["light.rgb", "light.white"], [255, 0, 0], "1hz", True).split() == (
+        ["light.rgb"],
+        ["light.white"],
+    )
+
+
+async def test_presence_light_when_it_gets_dark(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "on")
+    hass.states.async_set("sensor.lux", "200")
+    hass.states.async_set("light.hall", "off")
+    await setup(
+        hass,
+        """
+rooms:
+  Hall: {light: light.hall, presence: binary_sensor.presence, illuminance: sensor.lux}
+rules:
+  - {id: hall, type: presence_light, room: Hall, dark_below: 30}
+""",
+    )
+    hass.states.async_set("sensor.lux", "10")
+    await hass.async_block_till_done()
+    assert calls["light.turn_on"][-1].data["entity_id"] == "light.hall"
+
+
+async def test_vacuum_moves_one_at_a_time(hass: HomeAssistant, calls):
+    hass.states.async_set("vacuum.robot", "cleaning")
+    hass.states.async_set("sensor.room", "Hall")
+    for light in ("light.a", "light.b", "light.c"):
+        hass.states.async_set(light, "off")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  A: {light: light.a}
+  B: {light: light.b}
+  C: {light: light.c}
+rules:
+  - {id: follow, type: vacuum_follow, vacuum: vacuum.robot, room_sensor: sensor.room}
+""",
+    )
+    for room in ("A", "B", "C"):
+        hass.states.async_set("sensor.room", room)
+    await hass.async_block_till_done()
+    assert manager.rules["follow"].lit == ["light.c"]
+    assert manager.arbiter.holders("light.a") == set()

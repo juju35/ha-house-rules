@@ -15,6 +15,7 @@ from ..const import LEAK_GUARD, SENSOR_CHIME, SENSOR_FLASH, ST_ALERT, ST_ARMED, 
 from .base import Rule, changed
 
 RATES = {"1hz": 0.5, "2hz": 0.25, "pulse": 1.0}
+COLOR_MODES = {"hs", "xy", "rgb", "rgbw", "rgbww"}
 SNAPSHOT_ATTRS = ("brightness", "rgb_color", "color_temp_kelvin", "hs_color", "xy_color", "effect")
 
 
@@ -47,16 +48,29 @@ class Flasher:
             if self.rule.muted():
                 await asyncio.sleep(30)
                 continue
-            data: dict[str, Any] = {"entity_id": self.lights, "rgb_color": self.color, "brightness": 255}
+            extra: dict[str, Any] = {"brightness": 255}
             if self.rate == "pulse":
-                data["transition"] = half
-            await call("light", "turn_on", data)
+                extra["transition"] = half
+            colour, plain = self.split()
+            if colour:
+                await call("light", "turn_on", {"entity_id": colour, "rgb_color": self.color, **extra})
+            if plain:
+                await call("light", "turn_on", {"entity_id": plain, **extra})
             await asyncio.sleep(half)
             off: dict[str, Any] = {"entity_id": self.lights}
             if self.rate == "pulse":
                 off["transition"] = half
             await call("light", "turn_off", off)
             await asyncio.sleep(half)
+
+    def split(self) -> tuple[list[str], list[str]]:
+        """Lights that take a colour, and the others (brightness only: no failing call at every flash)."""
+        colour, plain = [], []
+        for light in self.lights:
+            st = self.rule.state(light)
+            modes = set(st.attributes.get("supported_color_modes") or []) if st else set()
+            (colour if modes & COLOR_MODES or not st else plain).append(light)
+        return colour, plain
 
     async def stop(self) -> None:
         if self.task is None:
@@ -148,8 +162,7 @@ class SensorFlash(Rule):
             return
         self.alerting, self.level = True, 1
         self.detail = self.friendly(self.trigger.entity)
-        if not self.muted():
-            self.flasher.start()
+        self.flasher.start()  # waits out the quiet hours by itself
         if self.cfg.get("message"):
             await self.notify(None, self.cfg["message"], self.cfg.get("critical", False))
         self.log("alert", f"{self.detail} · {', '.join(self.friendly(x) for x in self.cfg['lights'])}", "active")
@@ -185,11 +198,15 @@ class SensorFlash(Rule):
         await self._end("acknowledged")
 
     async def async_test(self) -> None:
+        """Flash for 6 s (returns at once; the flash stops by itself unless a real alert started meanwhile)."""
         self.flasher.start()
         self.log("test", "flash 6 s", "ok")
-        await asyncio.sleep(6)
-        if not self.alerting:
-            await self.flasher.stop()
+
+        async def stop(_now: datetime) -> None:
+            if not self.alerting:
+                await self.flasher.stop()
+
+        self.later(6, stop)
 
     def current_state(self) -> str:
         if self.alerting:
@@ -323,10 +340,9 @@ class LeakGuard(Rule):
         for entity in self.cfg["cut"]:
             self.manager.block(entity, self.id)
             await self.manager.call("homeassistant", "turn_off", {"entity_id": entity})
-        if not self.muted():
-            self.flasher.start()
-            if self.cfg.get("chime"):
-                await play(self, self.cfg["chime"], self.cfg.get("media"), None)
+        self.flasher.start()
+        if not self.muted() and self.cfg.get("chime"):
+            await play(self, self.cfg["chime"], self.cfg.get("media"), None)
         await self.notify(None, self.cfg.get("message") or where, self.cfg.get("critical", True))
         self.log("leak", f"{where} · {len(self.cfg['cut'])} cut", "active")
 
@@ -342,11 +358,15 @@ class LeakGuard(Rule):
         await self.flasher.stop()
 
     async def async_test(self) -> None:
+        """Flash for 6 s (returns at once; the flash stops by itself unless a real alert started meanwhile)."""
         self.flasher.start()
         self.log("test", "flash 6 s", "ok")
-        await asyncio.sleep(6)
-        if not self.wet:
-            await self.flasher.stop()
+
+        async def stop(_now: datetime) -> None:
+            if not self.wet:
+                await self.flasher.stop()
+
+        self.later(6, stop)
 
     def current_state(self) -> str:
         return ST_ALERT if self.wet else ST_ARMED

@@ -5,7 +5,7 @@
 //   custom:house-rules-activity-card the journal, filterable
 // One WebSocket subscription (house_rules/subscribe) is shared by every card of the page.
 
-const HR_VERSION = '1.0.0';
+const HR_VERSION = '1.0.1';
 
 const HR_STRINGS = {
   en: {
@@ -311,7 +311,7 @@ const HR_CSS = `
   .tstate { font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .badge { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px var(--hr-tile); }
   .banner { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: var(--hr-red-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hr-red) 35%, transparent); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); font: 600 13px var(--paper-font-body1_-_font-family, inherit); cursor: pointer; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); font-family: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
   .btn.red { border-color: var(--hr-red); color: var(--hr-red); }
   .rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .ring { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px; border-radius: 12px; background: var(--hr-tile); text-align: center; }
@@ -322,7 +322,7 @@ const HR_CSS = `
   li { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--divider-color); }
   li:last-child { border-bottom: 0; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { height: 28px; border: 0; border-radius: 14px; padding: 0 12px; cursor: pointer; font: 600 12px inherit; background: var(--hr-tile); color: var(--primary-text-color); }
+  .chip { height: 28px; border: 0; border-radius: 14px; padding: 0 12px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 12px; background: var(--hr-tile); color: var(--primary-text-color); }
   .chip.on { background: var(--primary-color); color: var(--text-primary-color, #fff); }
 `;
 
@@ -358,8 +358,11 @@ class HouseRulesBase extends HTMLElement {
   set hass(hass) {
     const first = !this._hass;
     this._hass = hass;
+    // Home Assistant sets hass at every state change anywhere: redraw only when what the card shows depends on it.
+    const key = `${hrLang(hass)}|${Boolean(hass?.themes?.darkMode)}`;
     if (first || !this._unsub) this._unsub = hrSubscribe(hass, (data) => this._update(data));
-    else this._render();
+    else if (key !== this._hassKey) this._render();
+    this._hassKey = key;
   }
 
   connectedCallback() {
@@ -658,6 +661,7 @@ window.__houseRulesShared = {
   esc: hrEsc,
   duration: hrDuration,
   t: hrT,
+  strings: HR_STRINGS,
   animCss: HR_ANIM_CSS,
 };
 

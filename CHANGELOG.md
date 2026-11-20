@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.1 - 2026-11-20
+
+### Fixes
+- Appliance resume: only a power cut (the progress going unavailable) powers the appliance back on — a switch turned
+  off by hand to cancel the programme no longer turns back on.
+- Notifications: one tag per rule, so a rule's notification no longer replaces another rule's (an end of cycle no
+  longer hides a leak alert).
+- Timed off: an entity that left the rule (label removed, `entity_id` changed) drops its timer instead of showing a
+  timer that never ends.
+- Vacuum lights: room changes in quick succession are handled one at a time (no light left on or turned off by a race).
+- Light alerts: an alert that starts during quiet hours starts flashing when they end; lights without colour flash in
+  brightness only (no failing call at every flash). Tests return at once (the 6-second flash stops by itself).
+- Presence light: getting dark while someone is in the room turns the lights on.
+- End of cycle: restarted during a cycle with the power already low, the end is still detected.
+- YAML: a file added to an `!include_dir_merge_list` folder is picked up without a manual reload.
+- Rule devices follow a renamed rule or a changed type.
+- Panel: typing in the Settings fields is no longer lost when an update arrives; quiet hours can be turned off; fonts
+  of tabs, chips and buttons (an invalid CSS shorthand made them fall back to the default font).
+- Cards: redrawn when House Rules, the theme or the language change — no longer at every state change of Home Assistant.
+- WebSocket: Test, snooze, cancel and vacation mode for administrators; acknowledging alerts and the timers' buttons
+  stay open to every user (cards).
+
+### Maintenance
+- Tests for every fix, the chime, the vacuum guard, end of cycle, the import; Node tests of the cards module (CI job
+  "JS tests").
+
 ## 1.0.0 - 2026-11-20
 
 ### Features
