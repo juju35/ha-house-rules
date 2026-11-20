@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0 - 2026-11-20
+
+### Features
+- Import from Smart Comfort: **Settings → Import → Analyze** proposes a `presence_light` rule per Smart Comfort room
+  with lights on presence (read from its config entry), with its room — lights, presence sensors, light level sensor —
+  and the naps of every room, as they are. `max_lux` → `dark_below`, `off_after` (minutes) → `off_delay`, slots with
+  their `off_after` and `during_naps`. A room that already has a `presence_light` rule is not proposed again.
+
+### Fixes
+- Panel header: laid out by the width of the panel, not of the window — with the sidebar open, the title no longer
+  wraps and the header is no longer cut. The menu button only shows when Home Assistant hides the sidebar, the title
+  and summary end with an ellipsis, and the tabs scroll instead of wrapping on a narrow screen.
+
 ## 1.2.0 - 2026-11-20
 
 ### Features

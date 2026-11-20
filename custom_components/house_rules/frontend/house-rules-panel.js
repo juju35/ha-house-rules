@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.2.0';
+const HOUSE_RULES_PANEL_VERSION = '1.3.0';
 
 // Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom" (days optional, an on/off
 // entity such as a `schedule` helper shared with other integrations), both ways. A part that doesn't
@@ -99,7 +99,7 @@ const HRP_STRINGS = {
     "repairs": "Repairs when a rule gives up",
     "vacation": "Vacation mode",
     "import": "Import",
-    "import_help": "Rules proposed from your labels and automations. Imported automations are turned off, never deleted.",
+    "import_help": "Rules proposed from your labels and automations. Imported automations are turned off, never deleted. Smart Comfort's lights on presence too: remove them there once imported.",
     "analyze": "Analyze",
     "import_selected": "Import {n}",
     "nothing_found": "Nothing to import.",
@@ -192,7 +192,7 @@ const HRP_STRINGS = {
     "repairs": "Signalement Réparations quand une règle abandonne",
     "vacation": "Mode vacances",
     "import": "Import",
-    "import_help": "Règles proposées depuis vos labels et automatisations. Les automatisations importées sont désactivées, jamais supprimées.",
+    "import_help": "Règles proposées depuis vos labels et automatisations. Les automatisations importées sont désactivées, jamais supprimées. Ainsi que les lumières sur présence de Smart Comfort : retirez-les-y une fois importées.",
     "analyze": "Analyser",
     "import_selected": "Importer {n}",
     "nothing_found": "Rien à importer.",
@@ -285,7 +285,7 @@ const HRP_STRINGS = {
     "repairs": "Reparatur, wenn eine Regel aufgibt",
     "vacation": "Urlaubsmodus",
     "import": "Import",
-    "import_help": "Regeln, vorgeschlagen aus deinen Labels und Automationen. Importierte Automationen werden deaktiviert, nie gelöscht.",
+    "import_help": "Regeln, vorgeschlagen aus deinen Labels und Automationen. Importierte Automationen werden deaktiviert, nie gelöscht. Auch die Lichter bei Anwesenheit von Smart Comfort: dort nach dem Import entfernen.",
     "analyze": "Analysieren",
     "import_selected": "{n} importieren",
     "nothing_found": "Nichts zu importieren.",
@@ -378,7 +378,7 @@ const HRP_STRINGS = {
     "repairs": "Aviso en Reparaciones cuando una regla se rinde",
     "vacation": "Modo vacaciones",
     "import": "Importar",
-    "import_help": "Reglas propuestas a partir de tus etiquetas y automatizaciones. Las automatizaciones importadas se desactivan, nunca se eliminan.",
+    "import_help": "Reglas propuestas a partir de tus etiquetas y automatizaciones. Las automatizaciones importadas se desactivan, nunca se eliminan. También las luces por presencia de Smart Comfort: quítalas allí una vez importadas.",
     "analyze": "Analizar",
     "import_selected": "Importar {n}",
     "nothing_found": "Nada que importar.",
@@ -471,7 +471,7 @@ const HRP_STRINGS = {
     "repairs": "Segnalazione in Riparazioni quando una regola si arrende",
     "vacation": "Modalità vacanza",
     "import": "Importa",
-    "import_help": "Regole proposte dalle tue etichette e automazioni. Le automazioni importate vengono disattivate, mai eliminate.",
+    "import_help": "Regole proposte dalle tue etichette e automazioni. Le automazioni importate vengono disattivate, mai eliminate. Anche le luci a presenza di Smart Comfort: rimuovile lì una volta importate.",
     "analyze": "Analizza",
     "import_selected": "Importa {n}",
     "nothing_found": "Niente da importare.",
@@ -564,7 +564,7 @@ const HRP_STRINGS = {
     "repairs": "Reparatiemelding als een regel opgeeft",
     "vacation": "Vakantiemodus",
     "import": "Importeren",
-    "import_help": "Regels voorgesteld op basis van je labels en automatiseringen. Geïmporteerde automatiseringen worden uitgeschakeld, nooit verwijderd.",
+    "import_help": "Regels voorgesteld op basis van je labels en automatiseringen. Geïmporteerde automatiseringen worden uitgeschakeld, nooit verwijderd. Ook de lampen bij aanwezigheid van Smart Comfort: verwijder ze daar na het importeren.",
     "analyze": "Analyseren",
     "import_selected": "{n} importeren",
     "nothing_found": "Niets te importeren.",
@@ -657,7 +657,7 @@ const HRP_STRINGS = {
     "repairs": "Aviso em Reparações quando uma regra desiste",
     "vacation": "Modo férias",
     "import": "Importar",
-    "import_help": "Regras propostas a partir das suas etiquetas e automatizações. As automatizações importadas são desativadas, nunca eliminadas.",
+    "import_help": "Regras propostas a partir das suas etiquetas e automatizações. As automatizações importadas são desativadas, nunca eliminadas. Também as luzes por presença do Smart Comfort: remova-as lá depois de importadas.",
     "analyze": "Analisar",
     "import_selected": "Importar {n}",
     "nothing_found": "Nada para importar.",
@@ -750,7 +750,7 @@ const HRP_STRINGS = {
     "repairs": "Zgłoszenie w Naprawach, gdy reguła się poddaje",
     "vacation": "Tryb urlopowy",
     "import": "Import",
-    "import_help": "Reguły zaproponowane na podstawie etykiet i automatyzacji. Zaimportowane automatyzacje są wyłączane, nigdy usuwane.",
+    "import_help": "Reguły zaproponowane na podstawie etykiet i automatyzacji. Zaimportowane automatyzacje są wyłączane, nigdy usuwane. Także światła przy obecności ze Smart Comfort: po imporcie usuń je tam.",
     "analyze": "Analizuj",
     "import_selected": "Importuj ({n})",
     "nothing_found": "Nic do zaimportowania.",
@@ -843,7 +843,7 @@ const HRP_STRINGS = {
     "repairs": "Пријава у Поправкама када правило одустане",
     "vacation": "Режим одмора",
     "import": "Увоз",
-    "import_help": "Правила предложена на основу ваших ознака и аутоматизација. Увезене аутоматизације се искључују, никада бришу.",
+    "import_help": "Правила предложена на основу ваших ознака и аутоматизација. Увезене аутоматизације се искључују, никада бришу. Такође и светла на присуство из Smart Comfort: уклоните их тамо након увоза.",
     "analyze": "Анализирај",
     "import_selected": "Увези ({n})",
     "nothing_found": "Нема ничега за увоз.",
@@ -936,7 +936,7 @@ const HRP_STRINGS = {
     "repairs": "Semnalare în Reparații când o regulă renunță",
     "vacation": "Mod vacanță",
     "import": "Import",
-    "import_help": "Reguli propuse din etichetele și automatizările tale. Automatizările importate sunt dezactivate, niciodată șterse.",
+    "import_help": "Reguli propuse din etichetele și automatizările tale. Automatizările importate sunt dezactivate, niciodată șterse. De asemenea, luminile la prezență din Smart Comfort: elimină-le de acolo după import.",
     "analyze": "Analizează",
     "import_selected": "Importă ({n})",
     "nothing_found": "Nimic de importat.",
@@ -1029,7 +1029,7 @@ const HRP_STRINGS = {
     "repairs": "Reparation, når en regel giver op",
     "vacation": "Ferietilstand",
     "import": "Import",
-    "import_help": "Regler foreslået ud fra dine etiketter og automatiseringer. Importerede automatiseringer slås fra, slettes aldrig.",
+    "import_help": "Regler foreslået ud fra dine etiketter og automatiseringer. Importerede automatiseringer slås fra, slettes aldrig. Også lys ved tilstedeværelse fra Smart Comfort: fjern dem der efter import.",
     "analyze": "Analyser",
     "import_selected": "Importér {n}",
     "nothing_found": "Intet at importere.",
@@ -1122,7 +1122,7 @@ const HRP_STRINGS = {
     "repairs": "Reparation när en regel ger upp",
     "vacation": "Semesterläge",
     "import": "Import",
-    "import_help": "Regler föreslagna utifrån dina etiketter och automationer. Importerade automationer stängs av, tas aldrig bort.",
+    "import_help": "Regler föreslagna utifrån dina etiketter och automationer. Importerade automationer stängs av, tas aldrig bort. Även lampor vid närvaro från Smart Comfort: ta bort dem där efter importen.",
     "analyze": "Analysera",
     "import_selected": "Importera {n}",
     "nothing_found": "Inget att importera.",
@@ -1215,7 +1215,7 @@ const HRP_STRINGS = {
     "repairs": "Сигнал в Поправки, когато правило се откаже",
     "vacation": "Режим отпуск",
     "import": "Импорт",
-    "import_help": "Правила, предложени от вашите етикети и автоматизации. Импортираните автоматизации се изключват, никога не се изтриват.",
+    "import_help": "Правила, предложени от вашите етикети и автоматизации. Импортираните автоматизации се изключват, никога не се изтриват. Също и светлините при присъствие от Smart Comfort: премахнете ги там след импортиране.",
     "analyze": "Анализирай",
     "import_selected": "Импортирай ({n})",
     "nothing_found": "Няма нищо за импорт.",
@@ -1308,7 +1308,7 @@ const HRP_STRINGS = {
     "repairs": "Сообщать в Исправлениях, когда правило сдаётся",
     "vacation": "Режим отпуска",
     "import": "Импорт",
-    "import_help": "Правила, предложенные на основе ваших меток и автоматизаций. Импортированные автоматизации отключаются, но не удаляются.",
+    "import_help": "Правила, предложенные на основе ваших меток и автоматизаций. Импортированные автоматизации отключаются, но не удаляются. А также свет по присутствию из Smart Comfort: удалите его там после импорта.",
     "analyze": "Анализировать",
     "import_selected": "Импортировать ({n})",
     "nothing_found": "Нечего импортировать.",
@@ -1401,7 +1401,7 @@ const HRP_STRINGS = {
     "repairs": "Повідомляти у Виправленнях, коли правило здається",
     "vacation": "Режим відпустки",
     "import": "Імпорт",
-    "import_help": "Правила, запропоновані на основі ваших міток і автоматизацій. Імпортовані автоматизації вимикаються, але не видаляються.",
+    "import_help": "Правила, запропоновані на основі ваших міток і автоматизацій. Імпортовані автоматизації вимикаються, але не видаляються. А також світло за присутністю зі Smart Comfort: видаліть його там після імпорту.",
     "analyze": "Аналізувати",
     "import_selected": "Імпортувати ({n})",
     "nothing_found": "Немає чого імпортувати.",
@@ -1494,7 +1494,7 @@ const HRP_STRINGS = {
     "repairs": "Javítási jelzés, ha egy szabály feladja",
     "vacation": "Szabadság mód",
     "import": "Importálás",
-    "import_help": "Szabályjavaslatok a címkéid és automatizálásaid alapján. Az importált automatizálások kikapcsolódnak, sosem törlődnek.",
+    "import_help": "Szabályjavaslatok a címkéid és automatizálásaid alapján. Az importált automatizálások kikapcsolódnak, sosem törlődnek. A Smart Comfort jelenlétre kapcsolt lámpái is: importálás után töröld őket ott.",
     "analyze": "Elemzés",
     "import_selected": "{n} importálása",
     "nothing_found": "Nincs mit importálni.",
@@ -1587,7 +1587,7 @@ const HRP_STRINGS = {
     "repairs": "Hlásenie v Opravách, keď to pravidlo vzdá",
     "vacation": "Režim dovolenky",
     "import": "Import",
-    "import_help": "Pravidlá navrhnuté z vašich štítkov a automatizácií. Importované automatizácie sa vypnú, nikdy neodstránia.",
+    "import_help": "Pravidlá navrhnuté z vašich štítkov a automatizácií. Importované automatizácie sa vypnú, nikdy neodstránia. Aj svetlá pri prítomnosti zo Smart Comfort: po importe ich tam odstráňte.",
     "analyze": "Analyzovať",
     "import_selected": "Importovať ({n})",
     "nothing_found": "Nie je čo importovať.",
@@ -1680,7 +1680,7 @@ const HRP_STRINGS = {
     "repairs": "Hlášení v Opravách, když pravidlo to vzdá",
     "vacation": "Režim dovolené",
     "import": "Import",
-    "import_help": "Pravidla navržená z vašich štítků a automatizací. Importované automatizace se vypnou, nikdy nesmažou.",
+    "import_help": "Pravidla navržená z vašich štítků a automatizací. Importované automatizace se vypnou, nikdy nesmažou. I světla při přítomnosti ze Smart Comfort: po importu je tam odstraňte.",
     "analyze": "Analyzovat",
     "import_selected": "Importovat ({n})",
     "nothing_found": "Není co importovat.",
@@ -1773,7 +1773,7 @@ const HRP_STRINGS = {
     "repairs": "Prijava v Popravilih, ko pravilo obupa",
     "vacation": "Način dopusta",
     "import": "Uvoz",
-    "import_help": "Pravila, predlagana iz vaših oznak in avtomatizacij. Uvožene avtomatizacije se izklopijo, nikoli izbrišejo.",
+    "import_help": "Pravila, predlagana iz vaših oznak in avtomatizacij. Uvožene avtomatizacije se izklopijo, nikoli izbrišejo. Tudi luči ob prisotnosti iz Smart Comfort: po uvozu jih tam odstranite.",
     "analyze": "Analiziraj",
     "import_selected": "Uvozi ({n})",
     "nothing_found": "Ni česa uvoziti.",
@@ -1866,7 +1866,7 @@ const HRP_STRINGS = {
     "repairs": "Ziņojums Labojumos, kad noteikums padodas",
     "vacation": "Atvaļinājuma režīms",
     "import": "Importēšana",
-    "import_help": "Noteikumi, kas ieteikti no jūsu birkām un automatizācijām. Importētās automatizācijas tiek izslēgtas, nekad dzēstas.",
+    "import_help": "Noteikumi, kas ieteikti no jūsu birkām un automatizācijām. Importētās automatizācijas tiek izslēgtas, nekad dzēstas. Arī Smart Comfort klātbūtnes gaismas: pēc importēšanas noņemiet tās tur.",
     "analyze": "Analizēt",
     "import_selected": "Importēt ({n})",
     "nothing_found": "Nav ko importēt.",
@@ -1959,7 +1959,7 @@ const HRP_STRINGS = {
     "repairs": "Αναφορά στις Επισκευές όταν ένας κανόνας εγκαταλείπει",
     "vacation": "Λειτουργία διακοπών",
     "import": "Εισαγωγή",
-    "import_help": "Κανόνες που προτείνονται από τις ετικέτες και τους αυτοματισμούς σας. Οι εισαγόμενοι αυτοματισμοί απενεργοποιούνται, δεν διαγράφονται ποτέ.",
+    "import_help": "Κανόνες που προτείνονται από τις ετικέτες και τους αυτοματισμούς σας. Οι εισαγόμενοι αυτοματισμοί απενεργοποιούνται, δεν διαγράφονται ποτέ. Επίσης τα φώτα παρουσίας του Smart Comfort: αφαιρέστε τα από εκεί μετά την εισαγωγή.",
     "analyze": "Ανάλυση",
     "import_selected": "Εισαγωγή ({n})",
     "nothing_found": "Δεν υπάρχει κάτι για εισαγωγή.",
@@ -2052,7 +2052,7 @@ const HRP_STRINGS = {
     "repairs": "Prijava u Popravkama kada pravilo odustane",
     "vacation": "Režim odmora",
     "import": "Uvoz",
-    "import_help": "Pravila predložena na osnovu vaših oznaka i automatizacija. Uvezene automatizacije se isključuju, nikada brišu.",
+    "import_help": "Pravila predložena na osnovu vaših oznaka i automatizacija. Uvezene automatizacije se isključuju, nikada brišu. Takođe i svetla na prisustvo iz Smart Comfort: uklonite ih tamo nakon uvoza.",
     "analyze": "Analiziraj",
     "import_selected": "Uvezi ({n})",
     "nothing_found": "Nema ničega za uvoz.",
@@ -2134,7 +2134,12 @@ class HouseRulesPanel extends HTMLElement {
     }
   }
 
-  set narrow(_v) {}
+  // Home Assistant's narrow layout (sidebar hidden): the menu button opens it.
+  set narrow(value) {
+    if (Boolean(value) === this._narrow) return;
+    this._narrow = Boolean(value);
+    this.shadowRoot?.querySelector('.page')?.classList.toggle('narrow', this._narrow);
+  }
   set panel(_v) {}
 
   connectedCallback() {
@@ -2239,7 +2244,7 @@ class HouseRulesPanel extends HTMLElement {
     if (d === undefined) content = '<div class="empty">…</div>';
     else if (d === null) content = '<div class="empty">House Rules is not loaded.</div>';
     else content = this[`tab_${this._ui.tab}`]();
-    this.shadowRoot.innerHTML = `<style>${HRP_CSS}${hrs().animCss}</style><div class="page" style="${this.vars()}">${this.top()}<main>${content}</main>${this.dialog()}</div>`;
+    this.shadowRoot.innerHTML = `<style>${HRP_CSS}${hrs().animCss}</style><div class="page${this._narrow ? ' narrow' : ''}" style="${this.vars()}">${this.top()}<main>${content}</main>${this.dialog()}</div>`;
     this.bind();
     if (keep) {
       const el = this.shadowRoot.getElementById(keep.id);
@@ -2817,15 +2822,19 @@ class HouseRulesPanel extends HTMLElement {
 const HRP_CSS = `
   :host { display: block; height: 100%; background: var(--primary-background-color); color: var(--primary-text-color); }
   .page { min-height: 100%; }
-  .hdr { position: relative; height: 96px; overflow: hidden; background: var(--hr-sky); }
+  .hdr { position: relative; height: 96px; overflow: hidden; background: var(--hr-sky); container-type: inline-size; }
   .hdr .hr-scene { position: absolute; right: 24px; bottom: 5px; opacity: .9; }
   .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--hr-ground); }
   .hdrc { position: absolute; left: 16px; right: 24px; top: 22px; display: flex; align-items: center; gap: 12px; }
-  .hdrc .row { margin-right: min(360px, 30vw); }
-  .menu { display: none; }
-  @media (max-width: 870px) { .menu { display: inline-flex; } .hdrc .row { margin-right: 0; } .hdr .hr-scene { opacity: .35; } }
-  .tabs { display: flex; flex-wrap: wrap; padding: 0 24px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
-  .tab { padding: 12px 4px; margin-right: 24px; font-family: inherit; font-weight: 600; font-size: 14px; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
+  .hdrc .row { margin-right: min(360px, 30cqw); flex-shrink: 0; }
+  .hdrc .grow > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hdrc .menu { display: none; }
+  .page.narrow .hdrc .menu { display: inline-flex; }
+  /* By the width of the panel, not of the window: the sidebar open leaves less room. */
+  @container (max-width: 760px) { .hdrc .row { margin-right: 0; } .hdr .hr-scene { opacity: .35; } }
+  @container (max-width: 480px) { .hdrc .row .pill { display: none; } }
+  .tabs { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 24px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
+  .tab { flex-shrink: 0; padding: 12px 4px; margin-right: 24px; font-family: inherit; font-weight: 600; font-size: 14px; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
   .tab.on { color: var(--primary-text-color); font-weight: 700; border-bottom-color: var(--primary-color); }
   main { max-width: 1232px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
   h2 { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); margin: 0 0 8px; }

@@ -26,7 +26,7 @@ The configuration lives in **`/config/house_rules.yaml`, edited both ways**: in 
 - **Light arbitration**: a light is turned off only when no rule wants it any more, and never when it was already on before (the vacuum leaving a room where someone switched the light on leaves it on)
 - **Escalation** of an alert: flash, then a chime, then a critical notification, each after its own delay
 - **Repairs** when a rule gives up (a plug that keeps turning off, an appliance that can't be resumed) or when `house_rules.yaml` is invalid — the last valid configuration keeps running
-- **Import**: rules proposed from the `Rallumer Prise` / `Extinction automatique` labels (with the `duree_*` durations) and from recognised automations, which are turned off (never deleted)
+- **Import**: rules proposed from the `Rallumer Prise` / `Extinction automatique` labels (with the `duree_*` durations), from recognised automations, which are turned off (never deleted), and from Smart Comfort's lights on presence
 - **Sidebar panel** with its emblem and a count badge (alerts in red, else running timers)
 - **Cards**: overview (full and mini), timers, activity
 
@@ -483,7 +483,20 @@ The rule's state shows why it is paused.
 
 **Settings → Import → Analyze** proposes rules from:
 - the labels `Rallumer Prise` / `keep on` (→ `keep_on`) and `Extinction automatique` / `auto off` (→ `auto_off`, durations from the `duree_*` labels);
-- the automations of `automations.yaml` that look like a light alert (repeat + `rgb_color`), lights following the vacuum (room map), a vacuum guard (`return_to_base` + openings map), an appliance resume (progress → unavailable + switch on), a lock after the door closed, or a chime (volume + player) — with the rooms found in their maps.
+- the automations of `automations.yaml` that look like a light alert (repeat + `rgb_color`), lights following the vacuum (room map), a vacuum guard (`return_to_base` + openings map), an appliance resume (progress → unavailable + switch on), a lock after the door closed, or a chime (volume + player) — with the rooms found in their maps;
+- the lights on presence of [Smart Comfort](https://github.com/juju35/ha-smart-comfort) (read from its config entry): a `presence_light` rule per room with presence, and its room — lights, presence sensors, light level sensor — plus the naps of every room, as they are (slots or a shared `schedule` helper).
+
+| Smart Comfort (`rooms[].presence`) | House Rules |
+|---|---|
+| `sensors`, `lux` | room `presence`, `illuminance` |
+| `lights` | rule `lights` (default: the room's) |
+| `max_lux` | `dark_below` |
+| `on_after` (seconds), `off_after` (minutes) | `on_after`, `off_delay` |
+| `transition`, `not_during_naps` | the same |
+| `slots` (`off_after` in minutes, `during_naps`) | `slots` (`off_delay`, `during_naps`) |
+| `rooms[].naps` | `rooms.<room>.naps` |
+
+Smart Comfort turns the lights on at the brightness of the moment (adaptive lighting): House Rules uses the slot or rule `brightness`, else the light's own. Once imported, remove the room's `presence:` from Smart Comfort so that only one of them acts.
 
 Pick what to import: the rules are added, the rooms merged (existing rooms kept), and the imported automations **turned off, never deleted**.
 

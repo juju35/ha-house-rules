@@ -1,7 +1,8 @@
-"""Proposals to start from what already exists: labels and automations that House Rules can replace.
+"""Proposals to start from what already exists: labels, automations and Smart Comfort's lights on presence.
 
 Heuristics only: each proposal is shown in the panel, the user picks what to import. Imported automations are
-turned off (never deleted).
+turned off (never deleted). Smart Comfort is read from its config entry (its options, which `smart_comfort.yaml`
+is synced into), never imported as code: its lights on presence stay on until removed there.
 """
 
 from __future__ import annotations
@@ -154,6 +155,81 @@ def proposals_from_automations(hass: HomeAssistant, automations: list[dict[str, 
     return out
 
 
+SMART_COMFORT = "smart_comfort"
+
+
+def _list(value: Any) -> list[Any]:
+    if not value:
+        return []
+    return list(value) if isinstance(value, (list, tuple)) else [value]
+
+
+def _hms(seconds: float) -> str:
+    total = round(seconds)
+    return f"{total // 3600:02d}:{total % 3600 // 60:02d}:{total % 60:02d}"
+
+
+def _sc_room(raw: dict[str, Any]) -> dict[str, Any]:
+    """A House Rules room from a Smart Comfort room: lights, presence sensors, light level sensor and naps."""
+    room: dict[str, Any] = {}
+    lights = [e if isinstance(e, str) else e.get("entity_id") for e in _list(raw.get("lights"))]
+    if lights := [e for e in lights if e]:
+        room["lights"] = lights
+    presence = raw.get("presence") or {}
+    if sensors := _list(presence.get("sensors")):
+        room["presence"] = sensors
+    if presence.get("lux"):
+        room["illuminance"] = presence["lux"]
+    if naps := _list(raw.get("naps")):
+        room["naps"] = naps  # Same format: slots (start, end, days) or on/off entities.
+    return room
+
+
+def _sc_slot(raw: dict[str, Any]) -> dict[str, Any]:
+    slot = {k: raw[k] for k in ("start", "end", "days", "lights", "brightness", "color", "during_naps") if raw.get(k)}
+    if raw.get("off") or raw.get(False):  # YAML 1.1 reads an unquoted `off:` key as False.
+        slot["off"] = True
+    if raw.get("off_after") is not None:
+        slot["off_delay"] = _hms(float(raw["off_after"]) * 60)
+    return slot
+
+
+def proposals_from_smart_comfort(options: dict[str, Any], taken: set[str]) -> list[dict[str, Any]]:
+    """A `presence_light` rule per Smart Comfort room with lights on presence (not those already in `taken`), with
+    its room; the naps of every room come along, as `not_during_naps` and `during_naps` depend on them."""
+    rooms = [r for r in _list(options.get("rooms")) if isinstance(r, dict) and r.get("name")]
+    napping = {r["name"]: _sc_room(r) for r in rooms if r.get("naps")}
+    out: list[dict[str, Any]] = []
+    for raw in rooms:
+        presence = raw.get("presence") or {}
+        name = str(raw["name"])
+        if not presence.get("sensors") or name in taken:
+            continue
+        rule: dict[str, Any] = {"id": _slug(f"presence_{name}"), "name": name, "type": "presence_light", "room": name}
+        if presence.get("lights"):
+            rule["lights"] = _list(presence["lights"])
+        if presence.get("max_lux") is not None:
+            rule["dark_below"] = float(presence["max_lux"])
+        if presence.get("on_after"):
+            rule["on_after"] = _hms(float(presence["on_after"]))
+        rule["off_delay"] = _hms(float(presence.get("off_after", 2)) * 60)  # Smart Comfort: minutes, 2 by default.
+        if presence.get("transition") is not None:
+            rule["transition"] = float(presence["transition"])
+        if not_during := _list(presence.get("not_during_naps")):
+            rule["not_during_naps"] = not_during
+        if slots := [_sc_slot(s) for s in _list(presence.get("slots")) if isinstance(s, dict)]:
+            rule["slots"] = slots
+        out.append(
+            {
+                "source": SMART_COMFORT,
+                "alias": f"Smart Comfort · {name}",
+                "rule": rule,
+                "rooms": {**napping, name: _sc_room(raw)},
+            }
+        )
+    return out
+
+
 def _read_automations(path: Path) -> list[dict[str, Any]]:
     from ruamel.yaml import YAML
 
@@ -201,6 +277,10 @@ async def analyze(hass: HomeAssistant, manager: HouseRules) -> dict[str, Any]:
             )
     automations = await hass.async_add_executor_job(_read_automations, Path(hass.config.path("automations.yaml")))
     proposals.extend(proposals_from_automations(hass, automations))
+    # A room that already has a presence_light rule is not proposed again.
+    taken = {str(r.get("room")) for r in manager.raw.get("rules", []) if r.get("type") == "presence_light"}
+    for entry in hass.config_entries.async_entries(SMART_COMFORT):
+        proposals.extend(proposals_from_smart_comfort(dict(entry.options), taken))
     registry = er.async_get(hass)
     for item in proposals:
         if item.get("automation"):
