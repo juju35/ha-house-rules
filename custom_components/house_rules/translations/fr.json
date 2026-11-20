@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Les règles, pièces et réglages se modifient dans le panneau House Rules ou dans house_rules.yaml (dans les deux sens)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules est déjà configuré."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": { "name": "Activée" },
+      "vacation": { "name": "Mode vacances" }
+    },
+    "sensor": {
+      "rule": {
+        "name": "État",
+        "state": {
+          "disabled": "Désactivée",
+          "snoozed": "En pause",
+          "idle": "Au repos",
+          "armed": "Armée",
+          "active": "Active",
+          "alert": "Alerte",
+          "waiting": "En attente",
+          "failed": "Échec"
+        }
+      },
+      "alerts": { "name": "Alertes en cours" },
+      "timers": { "name": "Minuteurs en cours" }
+    },
+    "button": {
+      "test": { "name": "Tester" },
+      "acknowledge": { "name": "Acquitter les alertes" }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "House Rules n'est pas chargé." },
+    "unknown_rule": { "message": "Règle inconnue : {rule}." }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml est invalide",
+      "description": "{file}, ligne {line} : {error}\n\nLa dernière configuration valide continue de tourner. L'édition dans le panneau est suspendue jusqu'à la correction du fichier."
+    },
+    "invalid_rules": {
+      "title": "Certaines règles House Rules sont invalides",
+      "description": "Ces règles n'ont pas été chargées : {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule} : {entity} se coupe sans arrêt",
+      "description": "{entity} a été rallumé trop de fois d'affilée : la règle a arrêté d'essayer. Vérifiez l'appareil, puis utilisez Annuler sur la règle (ou l'action house_rules.cancel) pour réessayer."
+    },
+    "resume_failed": {
+      "title": "{rule} : impossible de relancer {entity}",
+      "description": "L'appareil a été remis sous tension trop de fois pendant le même programme : la règle a arrêté d'essayer. Vérifiez l'appareil, puis utilisez Annuler sur la règle pour réessayer."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Tester une règle",
+      "description": "Exécute une fois l'action d'une ou plusieurs règles.",
+      "fields": { "rule": { "name": "Règles", "description": "Identifiants des règles." } }
+    },
+    "snooze": {
+      "name": "Mettre en pause",
+      "description": "Met une ou plusieurs règles en pause pour un temps (0 ou vide : reprendre maintenant).",
+      "fields": {
+        "rule": { "name": "Règles", "description": "Identifiants des règles." },
+        "minutes": { "name": "Minutes", "description": "Durée." }
+      }
+    },
+    "cancel": {
+      "name": "Annuler",
+      "description": "Arrête ce que fait une règle (alerte, minuteurs) ou oublie ses échecs.",
+      "fields": { "rule": { "name": "Règles", "description": "Identifiants des règles." } }
+    },
+    "acknowledge": {
+      "name": "Acquitter",
+      "description": "Termine les alertes (toutes si aucune règle n'est donnée).",
+      "fields": { "rule": { "name": "Règles", "description": "Identifiants des règles." } }
+    },
+    "extend_timer": {
+      "name": "Prolonger le minuteur",
+      "description": "Ajoute des minutes au minuteur d'extinction d'entités.",
+      "fields": {
+        "entity_id": { "name": "Entités", "description": "Entités avec un minuteur en cours." },
+        "minutes": { "name": "Minutes", "description": "Minutes à ajouter (négatif : retirer)." }
+      }
+    },
+    "reload": {
+      "name": "Recharger",
+      "description": "Relit house_rules.yaml (le fichier est aussi surveillé)."
+    },
+    "export_yaml": {
+      "name": "Exporter en YAML",
+      "description": "Renvoie toute la configuration en YAML."
+    }
+  }
+}

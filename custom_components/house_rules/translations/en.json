@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Rules, rooms and settings are edited in the House Rules panel or in house_rules.yaml (both ways)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules is already set up."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": { "name": "Enabled" },
+      "vacation": { "name": "Vacation mode" }
+    },
+    "sensor": {
+      "rule": {
+        "name": "State",
+        "state": {
+          "disabled": "Disabled",
+          "snoozed": "Snoozed",
+          "idle": "Idle",
+          "armed": "Armed",
+          "active": "Active",
+          "alert": "Alert",
+          "waiting": "Waiting",
+          "failed": "Failed"
+        }
+      },
+      "alerts": { "name": "Active alerts" },
+      "timers": { "name": "Running timers" }
+    },
+    "button": {
+      "test": { "name": "Test" },
+      "acknowledge": { "name": "Acknowledge alerts" }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "House Rules is not loaded." },
+    "unknown_rule": { "message": "Unknown rule: {rule}." }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml is invalid",
+      "description": "{file}, line {line}: {error}\n\nThe last valid configuration keeps running. Editing in the panel is paused until the file is fixed."
+    },
+    "invalid_rules": {
+      "title": "Some House Rules rules are invalid",
+      "description": "These rules were not loaded: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} keeps turning off",
+      "description": "{entity} was turned back on too many times in a row: the rule stopped trying. Check the device, then use Cancel on the rule (or the house_rules.cancel action) to try again."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} could not be resumed",
+      "description": "The appliance was powered back on too many times during the same programme: the rule stopped trying. Check the appliance, then use Cancel on the rule to try again."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Test a rule",
+      "description": "Runs the action of one or more rules once.",
+      "fields": { "rule": { "name": "Rules", "description": "Rule ids." } }
+    },
+    "snooze": {
+      "name": "Snooze",
+      "description": "Pauses one or more rules for a while (0 or empty: resume now).",
+      "fields": {
+        "rule": { "name": "Rules", "description": "Rule ids." },
+        "minutes": { "name": "Minutes", "description": "How long." }
+      }
+    },
+    "cancel": {
+      "name": "Cancel",
+      "description": "Stops what a rule is doing (alert, timers) or forgets its failures.",
+      "fields": { "rule": { "name": "Rules", "description": "Rule ids." } }
+    },
+    "acknowledge": {
+      "name": "Acknowledge",
+      "description": "Ends the alerts (all of them when no rule is given).",
+      "fields": { "rule": { "name": "Rules", "description": "Rule ids." } }
+    },
+    "extend_timer": {
+      "name": "Extend timer",
+      "description": "Adds minutes to the auto-off timer of entities.",
+      "fields": {
+        "entity_id": { "name": "Entities", "description": "Entities with a running timer." },
+        "minutes": { "name": "Minutes", "description": "Minutes to add (negative: remove)." }
+      }
+    },
+    "reload": {
+      "name": "Reload",
+      "description": "Reads house_rules.yaml again (the file is also watched)."
+    },
+    "export_yaml": {
+      "name": "Export as YAML",
+      "description": "Returns the whole configuration as YAML."
+    }
+  }
+}

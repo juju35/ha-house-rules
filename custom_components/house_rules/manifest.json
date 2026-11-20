@@ -1,0 +1,14 @@
+{
+  "domain": "house_rules",
+  "name": "House Rules",
+  "after_dependencies": ["frontend", "http", "lovelace", "notify", "websocket_api"],
+  "codeowners": ["@juju35"],
+  "config_flow": true,
+  "documentation": "https://github.com/juju35/ha-house-rules",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/juju35/ha-house-rules/issues",
+  "requirements": ["ruamel.yaml>=0.18.6"],
+  "single_config_entry": true,
+  "version": "1.0.0"
+}
