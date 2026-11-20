@@ -1,4 +1,7 @@
-"""Diagnostics: the configuration in use and the state of every rule (notification targets redacted)."""
+"""Diagnostics: the configuration in use and the state of every rule.
+
+Redacted: notification targets, notification texts and presence entities (they can carry people's names).
+"""
 
 from __future__ import annotations
 
@@ -7,7 +10,7 @@ from typing import Any
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
-TO_REDACT = {"notify"}
+TO_REDACT = {"notify", "message", "presence"}
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry) -> dict[str, Any]:

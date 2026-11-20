@@ -294,11 +294,12 @@ async def test_diagnostics_redact_notification_targets(hass: HomeAssistant):
 
     entry = await _setup(
         hass,
-        "settings: {notify: notify.phone}\nrules:\n"
+        "settings: {notify: notify.phone}\nrooms:\n  Hall:\n    presence: binary_sensor.alex_in_hall\nrules:\n"
         "  - id: a\n    type: keep_on\n    entity_id: switch.a\n    notify: notify.tablet\n",
     )
     diag = await async_get_config_entry_diagnostics(hass, entry)
     assert set(diag) == {"source", "raw", "errors", "rules", "conditions", "claims", "journal"}
     text = str(diag)
     assert "notify.phone" not in text and "notify.tablet" not in text
+    assert "alex" not in text
     assert "switch.a" in text
