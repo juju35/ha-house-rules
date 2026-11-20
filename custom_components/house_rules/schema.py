@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -31,6 +32,23 @@ TIME = cv.time
 RGB = vol.All(vol.ExactSequence((cv.byte, cv.byte, cv.byte)), vol.Coerce(list))
 RESPECT = vol.All(cv.ensure_list, [vol.In(CONDITIONS)])
 WINDOW = vol.Schema({vol.Required("start"): TIME, vol.Required("end"): TIME})
+PERCENT = vol.All(vol.Coerce(int), vol.Range(min=1, max=100))
+DELAY = vol.All(cv.time_period, vol.Range(min=timedelta(0)))
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+# A time slot of presence lights: some lights (all when none) kept off, or turned on at a brightness / colour, with
+# their own delay before off. The first slot that applies to a light decides.
+SLOT = vol.Schema(
+    {
+        vol.Required("start"): TIME,
+        vol.Required("end"): TIME,
+        vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
+        vol.Optional("lights"): ENTITIES,
+        vol.Optional("off", default=False): cv.boolean,
+        vol.Optional("brightness"): PERCENT,
+        vol.Optional("color"): RGB,
+        vol.Optional("off_delay"): DURATION,
+    }
+)
 
 
 def rule_id(value: Any) -> str:
@@ -174,12 +192,17 @@ TYPE_SCHEMAS: dict[str, vol.Schema] = {
         {
             **COMMON,
             vol.Required("room"): cv.string,
+            vol.Optional("sensors"): ENTITIES,
+            vol.Optional("lights"): ENTITIES,
             vol.Optional("dark_below"): vol.Coerce(float),
             vol.Optional("hysteresis", default=5.0): vol.Coerce(float),
+            vol.Optional("on_after", default=0): DELAY,
             vol.Optional("off_delay", default="00:00:30"): DURATION,
+            vol.Optional("transition"): vol.All(vol.Coerce(float), vol.Range(min=0)),
             vol.Optional("windows", default=list): [WINDOW],
-            vol.Optional("brightness"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+            vol.Optional("brightness"): PERCENT,
             vol.Optional("brightness_entity"): cv.entity_id,
+            vol.Optional("slots", default=list): [SLOT],
         }
     ),
     LOCK_GUARD: vol.Schema(
@@ -224,7 +247,7 @@ ROOM = vol.Schema(
         vol.Optional("lights", default=list): ENTITIES,
         vol.Optional("opening"): ENTITIES,
         vol.Optional("climate"): cv.entity_id,
-        vol.Optional("presence"): cv.entity_id,
+        vol.Optional("presence"): vol.Any(cv.entity_id, ENTITIES),
         vol.Optional("illuminance"): cv.entity_id,
     },
     extra=vol.ALLOW_EXTRA,

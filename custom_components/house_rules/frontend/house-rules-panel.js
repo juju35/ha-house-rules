@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.1.1';
+const HOUSE_RULES_PANEL_VERSION = '1.2.0';
 
 const HRP_STRINGS = {
   "en": {
@@ -2040,7 +2040,8 @@ const HRP_TEMPLATES = {
     'id: washing_machine\ntype: cycle_done\npower_entity: sensor.washing_machine_power\ndone_below: 3\ndone_for: "00:03:00"\ndoor: binary_sensor.washing_machine_door\nreminder: "00:30:00"\n',
   vacuum_follow: 'id: vacuum_lights\ntype: vacuum_follow\nvacuum: vacuum.robot\nroom_sensor: sensor.robot_current_room\ntransition: 10\n',
   vacuum_guard: 'id: vacuum_guard\ntype: vacuum_guard\nvacuum: vacuum.robot\nroom_sensor: sensor.robot_current_room\n',
-  presence_light: 'id: hall_presence\ntype: presence_light\nroom: Hall\ndark_below: 30\noff_delay: "00:00:30"\n',
+  presence_light:
+    'id: hall_presence\ntype: presence_light\nroom: Hall\ndark_below: 30\non_after: 2\noff_delay: "00:00:30"\nslots:\n  - {start: "22:00", end: "07:00", brightness: 20}\n',
   lock_guard: 'id: front_lock\ntype: lock_guard\nlock: lock.front_door\ndoor: binary_sensor.front_door\nlock_after: "00:00:30"\n',
   leak_guard:
     'id: kitchen_leak\ntype: leak_guard\nsensors: [binary_sensor.sink_leak]\ncut: [switch.dishwasher]\nlights: [light.hall]\n',
@@ -2701,8 +2702,8 @@ class HouseRulesPanel extends HTMLElement {
     } else {
       const value = el.value.trim();
       if (!value) delete room[el.dataset.field];
-      else if (el.dataset.field === 'opening' && value.includes(','))
-        room.opening = value
+      else if (['opening', 'presence'].includes(el.dataset.field) && value.includes(','))
+        room[el.dataset.field] = value
           .split(',')
           .map((v) => v.trim())
           .filter(Boolean);
