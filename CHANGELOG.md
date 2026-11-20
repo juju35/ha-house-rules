@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1 - 2026-11-20
+
+### Fixes
+- Panel: the unsaved changes of the Rooms, YAML and Settings tabs (Cancel / Save) gather in one bar, sticky at the
+  bottom of the page, as on System Hub — no longer buttons in the tab's header row or at the end of a card.
+
 ## 1.3.0 - 2026-11-20
 
 ### Features
