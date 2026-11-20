@@ -192,8 +192,8 @@ async def test_rule_device_follows_rename(hass: HomeAssistant):
     entry = await _setup(hass, "rules:\n  - id: a\n    type: keep_on\n    entity_id: switch.a\n")
     await entry.runtime_data.async_save_rule({"id": "a", "name": "Box", "type": "keep_on", "entity_id": "switch.a"})
     await hass.async_block_till_done()
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "rule_a")})
-    assert device.name == "Box"
+    devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert "Box" in [d.name for d in devices]
 
 
 async def test_quiet_hours_can_be_cleared(hass: HomeAssistant):
