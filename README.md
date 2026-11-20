@@ -75,112 +75,404 @@ The cards are added to the dashboard resources automatically (`/house_rules_stat
 
 ### house_rules.yaml
 
+Three sections: `settings`, `rooms` and `rules`. Each can be moved to its own file with `!include file.yaml`, and `rules` can be spread over a folder with `!include_dir_merge_list folder` (one list per file). `!secret` works anywhere.
+
 ```yaml
 settings:
   quiet_hours: {start: "00:00", end: "08:00"}
-  notify: notify.family          # default target; a rule can set its own `notify:`
+  notify: notify.family
   alarm: alarm_control_panel.alarmo
-  repairs: true
 
-rooms:                           # names as the vacuum's current-room sensor reports them
+rooms:
   Kitchen:
     light: light.kitchen
     opening: binary_sensor.kitchen_french_window
     climate: climate.air_conditioner
   Dining room:
-    light: light.kitchen         # shared light
+    light: light.kitchen
   Hallway:
     light: light.hallway
     presence: binary_sensor.hallway_occupancy
     illuminance: sensor.hallway_illuminance
 
-rules:
-  - id: kettle
-    type: auto_off
-    entity_id: switch.kettle
-    duration: "00:05:00"
-  - id: electrical_panel
-    type: sensor_flash
-    trigger: {entity_id: binary_sensor.electrical_panel_door, to: "on", for: "00:02:00"}
-    lights: [light.hallway_night_light, light.living_night_light]
-    color: [255, 0, 0]
-    respect: [quiet_hours]
-    escalation:
-      - {after: "00:05:00", chime: media_player.living_room_speaker, media: media-source://media_source/local/chime.mp3}
-      - {after: "00:10:00", notify: critical, message: The electrical panel is still open}
+rules: !include_dir_merge_list house_rules/
 ```
 
-Common options of every rule:
+#### Settings
 
 | Option | Default | Description |
 |---|---|---|
-| `id` | generated from `name`/`type` when missing (written back to the file) | Unique, lower case letters, digits and `_` |
+| `quiet_hours` | `{start: "00:00", end: "08:00"}` | Window (may cross midnight) in which the rules that respect `quiet_hours` neither light nor ring: they only notify. `null`: no quiet hours |
+| `notify` | none | Default notification target (`notify.family` or `family`); a rule can set its own `notify:` |
+| `alarm` | none | `alarm_control_panel` used by the `alarm` condition |
+| `repairs` | `true` | Create a repair when a rule gives up |
+
+#### Rooms
+
+Room names are the ones the vacuum's current-room sensor reports (for `vacuum_follow` / `vacuum_guard`) and the ones `presence_light` refers to. The panel's **Rooms** tab edits this table.
+
+| Option | Description |
+|---|---|
+| `light` / `lights` | The room's light(s); two rooms may share a light |
+| `opening` | Door/window `binary_sensor`(s) of the room (`vacuum_guard`) |
+| `climate` | Air conditioner of the room: while it runs, `vacuum_guard` lets the robot clean with the opening open |
+| `presence` | Presence/occupancy `binary_sensor` (`presence_light`) |
+| `illuminance` | Light level sensor (`dark_below` of `vacuum_follow` / `presence_light`) |
+
+#### Common options of every rule
+
+| Option | Default | Description |
+|---|---|---|
+| `id` | generated from `name` or `type` (written back to the file) | Unique; lower case letters, digits and `_`, 64 characters at most |
 | `type` | required | One of the types below |
-| `name` | from the id | Display name |
-| `enabled` | `true` | `false` pauses the rule (the rule's switch writes it) |
+| `name` | from the id | Display name (rule device, panel, cards, journal) |
+| `enabled` | `true` | `false` pauses the rule; the rule's switch writes it |
 | `respect` | `[]` | Global conditions the rule respects: `quiet_hours`, `away`, `alarm`, `vacation` |
 | `notify` | `settings.notify` | Notification target of this rule |
 
+Durations take `"HH:MM:SS"` or a number of seconds; times of day take `"HH:MM"`.
+
 ### Rule types
 
-| Type | What it does | Main options |
-|---|---|---|
-| `keep_on` | Turns the entities back on when they go off | `entity_id` and/or `label`, `delay` (10 s), `max_attempts` (3) per `window` (1 h) |
-| `auto_off` | Turns the entities off a while after they were turned on; timers survive restarts | `entity_id` and/or `label`, `duration` (else from a `duree_5min` / `duree_1h30` label), `power_entity` + `power_above` (not while drawing more) |
-| `sensor_flash` | Lights flash while the trigger holds, then are put back as they were | `trigger` (`entity_id`, `to`, `from`, `for`), `lights`, `color`, `rate` (`1hz`, `2hz`, `pulse`), `restore`, `message`, `critical`, `escalation` |
-| `sensor_chime` | A sound when the trigger is entered, within time windows; the volume is restored | `trigger`, `media_player`, `media` or `script`, `volume`, `duration`, `windows` |
-| `appliance_resume` | Powers the appliance back on when its programme's progress went unavailable before 100 % | `switch`, `progress`, `delay`, `max_attempts`, `power_on_at` (daily power-on) |
-| `cycle_done` | End of a cycle: notifies, then reminds until the door opens | `power_entity` (`start_above`, `done_below`, `done_for`) or `state_entity` + `done_states`, `door`, `reminder`, `max_reminders`, `message` |
-| `vacuum_follow` | The lights of the rooms table follow the robot; off at the dock | `vacuum`, `room_sensor`, `transition`, `dark_below`, `off_at_dock` |
-| `vacuum_guard` | Sends the robot back when its room's opening is open (unless the room's air conditioner runs) | `vacuum`, `room_sensor`, `message` |
-| `presence_light` | Presence turns the room's lights on when it is dark, off after a delay | `room`, `dark_below`, `hysteresis`, `off_delay`, `windows`, `brightness` or `brightness_entity` |
-| `lock_guard` | Locks after the door closes or the alarm is armed; optionally disarms when unlocked | `lock`, `door`, `lock_after`, `alarm`, `lock_on_arm_after`, `disarm_on_unlock` |
-| `leak_guard` | A leak: cuts the appliances (and keeps them from being resumed), flashes, rings, notifies | `sensors`, `cut`, `lights`, `chime`, `media`, `message`, `critical` |
+#### `keep_on` — keep entities on
 
-Durations take `"HH:MM:SS"` or seconds.
+Turns the entities back on when they go off, after `delay`. After `max_attempts` within `window` for the same entity, the rule gives up on it (state `failed`, repair); **Cancel** on the rule makes it try again. An entity cut by a `leak_guard` is left off.
+
+| Option | Default | Description |
+|---|---|---|
+| `entity_id` | — | Entities (`switch`, `light`, `fan` or any entity `homeassistant.turn_on` handles) |
+| `label` | — | A label (id or name): every entity carrying it, now and later. `entity_id` and/or `label` is required |
+| `delay` | `00:00:10` | How long an entity stays off before it is turned back on |
+| `max_attempts` | `3` | Attempts per entity within `window` |
+| `window` | `01:00:00` | The period `max_attempts` counts over |
+
+```yaml
+- id: always_on
+  type: keep_on
+  label: Rallumer Prise
+```
+
+#### `auto_off` — turn off after a while
+
+Turns the entities off `duration` after they were turned on. The start times are stored: a restart or a reload doesn't reset them. Turned back on, a timer starts again; **+15 min** (panel, card, `extend_timer`) moves its end.
+
+| Option | Default | Description |
+|---|---|---|
+| `entity_id` / `label` | — | As for `keep_on` |
+| `duration` | — | Time before turning off. Without it, each entity's duration comes from a label named `duree_5min`, `duree_1h`, `duree_1h30` (or `duration_…`); entities with neither are listed in the rule's `no_duration` attribute |
+| `power_entity` | none | A power sensor: not turned off while it reads more than `power_above` |
+| `power_above` | none | Watts |
+
+```yaml
+- id: timed_plugs
+  type: auto_off
+  label: Extinction automatique   # durations from the duree_* labels
+- id: kettle
+  type: auto_off
+  entity_id: switch.kettle
+  duration: "00:05:00"
+```
+
+#### `sensor_flash` — light alert with escalation
+
+While the trigger holds (after `for`), the lights flash in `color`; when it ends (or is acknowledged), the lights go back to their state before the alert (`restore`) or off. During quiet hours (when respected) nothing flashes: only the notifications go out. Escalation steps run at `after`, counted from the moment the trigger was entered.
+
+| Option | Default | Description |
+|---|---|---|
+| `trigger` | required | `entity_id`, `to` (`on`), optional `from`, optional `for` |
+| `lights` | required | Lights to flash |
+| `color` | `[255, 0, 0]` | RGB |
+| `rate` | `1hz` | `1hz`, `2hz` or `pulse` |
+| `restore` | `true` | Put the lights back as they were (else off) |
+| `message` | none | Notification sent when the alert starts |
+| `critical` | `false` | That notification as critical |
+| `escalation` | `[]` | Steps: `after` (required), `chime` (a media player) + `media`, `notify` (`normal` or `critical`), `message` |
+
+```yaml
+- id: electrical_panel
+  type: sensor_flash
+  trigger: {entity_id: binary_sensor.electrical_panel_door, to: "on", for: "00:02:00"}
+  lights: [light.hallway_night_light, light.living_night_light]
+  respect: [quiet_hours]
+  message: The electrical panel is open
+  escalation:
+    - {after: "00:05:00", chime: media_player.living_room_speaker, media: media-source://media_source/local/chime.mp3}
+    - {after: "00:10:00", notify: critical}
+```
+
+#### `sensor_chime` — a sound on a sensor
+
+Plays a sound when the trigger is entered (from `off` by default, so a sensor coming back online doesn't ring), within `windows`. With `volume`, the player's volume is set, then restored after `duration`. Failures of the player (timeouts, a speaker that doesn't confirm) never stop the rule.
+
+| Option | Default | Description |
+|---|---|---|
+| `trigger` | required | `entity_id`, `to` (`on`), `from` (`off`) |
+| `media_player` | required | The player |
+| `media` | — | `media_content_id` to play (`media-source://…`, a URL) |
+| `script` | — | A script to run instead (started without waiting) |
+| `volume` | none | 0 to 1, restored afterwards |
+| `duration` | `00:00:20` | When the volume is restored |
+| `windows` | always | Time windows: `[{start: "09:00", end: "13:30"}, …]` |
+
+```yaml
+- id: front_door_chime
+  type: sensor_chime
+  trigger: {entity_id: binary_sensor.front_door}
+  media_player: media_player.living_room_speaker
+  script: script.doorbell_chime
+  volume: 0.4
+  windows:
+    - {start: "09:00", end: "13:30"}
+    - {start: "17:00", end: "21:00"}
+```
+
+#### `appliance_resume` — power an appliance back on
+
+When the programme's progress becomes unavailable (the appliance lost power) — or the switch turns off — while the last progress was between 0 and 100 %, the switch is turned back on after `delay` and a critical notification says at which percentage. At most `max_attempts` per programme (reset when the progress reaches 0 or 100 %). Not while a `leak_guard` cut it. `power_on_at` turns the switch on every day at that time.
+
+| Option | Default | Description |
+|---|---|---|
+| `switch` | required | The appliance's plug or power switch |
+| `progress` | — | Programme progress sensor (%) |
+| `delay` | `00:00:05` | Wait before powering back on |
+| `max_attempts` | `2` | Per programme |
+| `power_on_at` | none | Daily power-on time |
+
+```yaml
+- id: dishwasher
+  type: appliance_resume
+  switch: switch.dishwasher_plug
+  progress: sensor.dishwasher_programme_progress
+  power_on_at: "19:30"
+```
+
+#### `cycle_done` — end of a cycle
+
+By power: running above `start_above`, done once below `done_below` for `done_for`. By state: done when `state_entity` enters one of `done_states`. Then a notification, and with `door` + `reminder`, reminders until the door opens (at most `max_reminders`).
+
+| Option | Default | Description |
+|---|---|---|
+| `power_entity` | — | Power sensor (W) |
+| `start_above` | `10` | W: the cycle has started |
+| `done_below` | `3` | W: the cycle is over… |
+| `done_for` | `00:03:00` | …for this long |
+| `state_entity` / `done_states` | — | Or a state that means "done" (`charging`, `finished`…) |
+| `door` | none | Door `binary_sensor`: opened = emptied |
+| `reminder` | none | Interval of the reminders |
+| `max_reminders` | `3` | |
+| `message` | rule name | Notification text |
+
+```yaml
+- id: washing_machine
+  type: cycle_done
+  power_entity: sensor.washing_machine_power
+  door: binary_sensor.washing_machine_door
+  reminder: "00:30:00"
+  message: The washing machine is done
+- id: mop_cleaning
+  type: cycle_done
+  state_entity: sensor.mop_robot_status
+  done_states: [charging]
+  message: Clean the mop robot
+```
+
+#### `vacuum_follow` — lights follow the vacuum
+
+While the robot cleans, the light(s) of the room it is in (from the rooms table) turn on, those of the room it left turn off — unless they were on before it came, or another rule (presence) still wants them. Two rooms sharing a light: nothing changes between them. At the dock, every light the rule turned on goes off.
+
+| Option | Default | Description |
+|---|---|---|
+| `vacuum` | required | The robot |
+| `room_sensor` | required | Its current-room sensor (state = room name) |
+| `transition` | `10` | Seconds |
+| `dark_below` | none | Lux: only when the room's `illuminance` is below |
+| `off_at_dock` | `true` | Turn its lights off when docked |
+
+```yaml
+- id: vacuum_lights
+  type: vacuum_follow
+  vacuum: vacuum.robot
+  room_sensor: sensor.robot_current_room
+```
+
+#### `vacuum_guard` — back to base when the room is open
+
+While the robot cleans, as soon as it is in a room whose `opening` is open — or an opening of its room opens — it is sent back to its base, with a critical notification. Not when the room's `climate` is running.
+
+| Option | Default | Description |
+|---|---|---|
+| `vacuum` | required | The robot |
+| `room_sensor` | required | Its current-room sensor |
+| `message` | room · openings | Notification text |
+
+#### `presence_light` — lights on presence
+
+Presence in the room turns its lights on when it is dark (below `dark_below`, with `hysteresis` once on, since the light raises the level) and within `windows`; no presence for `off_delay` turns them off — unless another rule (the vacuum) still wants them, or they were on before.
+
+| Option | Default | Description |
+|---|---|---|
+| `room` | required | A room of the rooms table (with `presence`, `light`, optional `illuminance`) |
+| `dark_below` | none | Lux |
+| `hysteresis` | `5` | Lux added once on |
+| `off_delay` | `00:00:30` | |
+| `windows` | always | Time windows |
+| `brightness` | light's own | 1–100 % |
+| `brightness_entity` | none | A sensor or number giving the brightness in % (wins over `brightness`) |
+
+```yaml
+- id: hallway_presence
+  type: presence_light
+  room: Hallway
+  dark_below: 50
+  off_delay: "00:00:30"
+```
+
+#### `lock_guard` — lock and alarm
+
+Locks `lock_after` once the door has closed, and `lock_on_arm_after` once the alarm is armed (door closed). With `disarm_on_unlock`, unlocking disarms the alarm — any unlock, including from the app: only enable it if that is what you want.
+
+| Option | Default | Description |
+|---|---|---|
+| `lock` | required | The lock |
+| `door` | none | Door `binary_sensor` |
+| `lock_after` | `00:00:30` | After the door closed |
+| `alarm` | none | `alarm_control_panel` |
+| `lock_on_arm_after` | `00:01:00` | After the alarm was armed |
+| `disarm_on_unlock` | `false` | Disarm when unlocked |
+
+#### `leak_guard` — water leak
+
+A leak sensor turns on: the `cut` entities are turned off and kept from being turned back on by `keep_on` / `appliance_resume` until every sensor is dry; the lights flash red, the chime rings, a (critical) notification goes out. Dry again, the lights are restored; the cut appliances stay off.
+
+| Option | Default | Description |
+|---|---|---|
+| `sensors` | required | Leak `binary_sensor`s |
+| `cut` | `[]` | Entities to turn off |
+| `lights` | `[]` | Lights to flash |
+| `chime` / `media` | none | Player and sound |
+| `message` | wet sensors | Notification text |
+| `critical` | `true` | |
+
+```yaml
+- id: kitchen_leak
+  type: leak_guard
+  sensors: [binary_sensor.sink_leak, binary_sensor.dishwasher_leak]
+  cut: [switch.dishwasher_plug]
+  lights: [light.hallway_night_light]
+```
+
+### YAML both ways
+
+- **From the panel to the file**: a save rewrites only the block of the rule (found by its `id`), in the file it comes from; untouched keys keep their comments, `!secret` values stay as they are unless changed. The previous file is kept as `house_rules.yaml.bak`, and the new one is written to a temporary file then renamed (never half written).
+- **From the file to the panel**: the files are checked every 5 seconds (and by `house_rules.reload`); only the rules whose definition changed restart, so the timers and alerts of the others keep running. The panel shows "house_rules.yaml changed at … · n rules reloaded".
+- **Conflicts**: a save is refused when the file changed since it was read; the panel shows the file's version and yours side by side, to keep one or the other.
+- **Invalid file**: the last valid configuration keeps running, a repair gives the file and line, editing in the panel is paused until the file is fixed. An invalid rule alone is skipped (repair listing it), the others run.
+- **The YAML tab** edits the whole main file: checked first (YAML and every rule), same conflict rule.
+- Without `house_rules.yaml` the configuration is stored by the integration; **Settings → Switch to YAML** writes the file from it. Runtime state (timers, attempts, snoozes, journal) is never written to the YAML.
+
+### Global conditions
+
+| Condition | Paused when | Effect |
+|---|---|---|
+| `quiet_hours` | inside `settings.quiet_hours` | No light, no sound: notifications only |
+| `away` | every `person` is away | The rule does nothing |
+| `alarm` | `settings.alarm` is armed | The rule does nothing |
+| `vacation` | `switch.house_rules_vacation_mode` is on | The rule does nothing |
+
+The rule's state shows why it is paused.
+
+### Import
+
+**Settings → Import → Analyze** proposes rules from:
+- the labels `Rallumer Prise` / `keep on` (→ `keep_on`) and `Extinction automatique` / `auto off` (→ `auto_off`, durations from the `duree_*` labels);
+- the automations of `automations.yaml` that look like a light alert (repeat + `rgb_color`), lights following the vacuum (room map), a vacuum guard (`return_to_base` + openings map), an appliance resume (progress → unavailable + switch on), a lock after the door closed, or a chime (volume + player) — with the rooms found in their maps.
+
+Pick what to import: the rules are added, the rooms merged (existing rooms kept), and the imported automations **turned off, never deleted**.
 
 ### Cards
 
-All cards share the illustrated header (one object per rule family on the ground bar, coloured by status, night look with a dark theme or `illustration_theme: night`).
+All cards share the illustrated header: one object per rule family on the ground bar (plug, lamp, robot, lock, bell, appliance, drop), coloured by the worst state of the family and animated (alert blinking, robot moving, lamp glowing); the night look follows a dark theme, or `illustration_theme`.
 
-| Card | Options |
-|---|---|
-| `custom:house-rules-card` | `title`, `illustration_theme` (`auto`, `day`, `night`), `types` (YAML only: rule types to show) |
-| `custom:house-rules-mini-card` | Same options (both), folded to its header; the corner button unfolds it, a click outside folds it |
-| `custom:house-rules-timers-card` | `title` |
-| `custom:house-rules-activity-card` | `title`, `limit` (8) |
+#### Overview (`custom:house-rules-card`)
+
+An alert banner per rule in alert (with **Acknowledge**), then one tile per rule type: the most important state of its rules.
+
+| Option | Default | Editor | Description |
+|---|---|---|---|
+| `title` | House Rules | yes | |
+| `illustration_theme` | `auto` | yes | `auto`, `day`, `night` |
+| `types` | all | YAML only | Rule types to show |
+
+#### Mini card (`custom:house-rules-mini-card`)
+
+The overview folded to its header (status pill: alerts, timers or all good); the corner button unfolds it, a click outside folds it. Same options (both).
+
+#### Timers (`custom:house-rules-timers-card`)
+
+One ring per running auto-off timer, with **+15** and **turn off**.
+
+| Option | Default | Description |
+|---|---|---|
+| `title` | Timers | |
+
+#### Activity (`custom:house-rules-activity-card`)
+
+The latest runs, with filters (all, alerts, plugs, vacuum, failures).
+
+| Option | Default | Description |
+|---|---|---|
+| `title` | Activity | |
+| `limit` | `8` | Lines shown |
+
+```yaml
+type: custom:house-rules-mini-card
+---
+type: custom:house-rules-timers-card
+---
+type: custom:house-rules-activity-card
+limit: 6
+```
 
 ### Entities
 
+One device per rule, plus the House Rules device:
+
 | Entity | Description |
 |---|---|
-| `switch.<rule>_enabled` | The rule on or off (written to the configuration) |
-| `sensor.<rule>_state` | `disabled`, `snoozed`, `idle`, `armed`, `active`, `alert`, `waiting`, `failed`; attributes per type |
+| `switch.<rule>_enabled` | The rule on or off (writes `enabled: false` to the configuration) |
+| `sensor.<rule>_state` | `disabled`, `snoozed`, `idle`, `armed`, `active`, `alert`, `waiting`, `failed`; attributes: `rule_id`, `rule_type`, `detail`, `blocked_by`, `snoozed_until`, `last_run` and the type's own (timers, attempts, progress, room, lights on…) |
 | `button.<rule>_test` | Runs the rule's action once |
 | `switch.house_rules_vacation_mode` | Pauses the rules that respect `vacation` |
-| `sensor.house_rules_active_alerts` | Number of rules in alert |
-| `sensor.house_rules_running_timers` | Number of running auto-off timers |
+| `sensor.house_rules_active_alerts` | Number of rules in alert (`house_rules_alerts` attribute: which) |
+| `sensor.house_rules_running_timers` | Number of running auto-off timers (`timers` attribute: entity, start, end) |
 | `button.house_rules_acknowledge_alerts` | Ends every alert |
 
 ### Actions
 
-| Action | Description |
-|---|---|
-| `house_rules.trigger` | Test rules (`rule`: ids) |
-| `house_rules.snooze` | Pause rules for `minutes` (0: resume) |
-| `house_rules.cancel` | Stop what a rule is doing, or forget its failures |
-| `house_rules.acknowledge` | End alerts (all when no `rule`) |
-| `house_rules.extend_timer` | Add `minutes` to the timers of `entity_id` |
-| `house_rules.reload` | Read `house_rules.yaml` again (the file is also watched) |
-| `house_rules.export_yaml` | Return the whole configuration as YAML |
+| Action | Fields | Description |
+|---|---|---|
+| `house_rules.trigger` | `rule` (ids) | Run the rules' action once (Test) |
+| `house_rules.snooze` | `rule`, `minutes` | Pause rules (0 or empty: resume now) |
+| `house_rules.cancel` | `rule` | Stop what a rule is doing (alert, timers) or forget its failures |
+| `house_rules.acknowledge` | `rule` (optional) | End alerts (all when no rule) |
+| `house_rules.extend_timer` | `entity_id`, `minutes` (15) | Move the end of auto-off timers (negative: sooner) |
+| `house_rules.reload` | — | Read `house_rules.yaml` again; returns the reloaded rules |
+| `house_rules.export_yaml` | — | Returns the whole configuration as YAML |
 
 ### Events
 
-`house_rules_fired` on every run: `rule`, `type`, `name`, `action`, `detail`, `result`.
+`house_rules_fired` on every run: `rule`, `type`, `name`, `action` (`turned_on`, `turned_off`, `alert`, `escalation`, `cleared`, `chime`, `resumed`, `done`, `light_on`, `light_off`, `returned`, `locked`, `leak`…), `detail`, `result` (`ok`, `skipped`, `active`, `failed`).
 
 ### Diagnostics
 
 **Settings → Devices & services → House Rules → Download diagnostics**: configuration, rule states, conditions, light claims and the latest runs (notification targets redacted).
+
+## How it works
+
+- Each rule listens to the state changes of its entities (no polling, except a 15-second tick for the timers and the missed changes).
+- Every action is a service call with the integration's own context, logged in the journal (kept 14 days, 300 entries) and sent as a `house_rules_fired` event.
+- Lights turned on by a rule are *claimed*: a light goes off only when no rule claims it any more, and never when it was on before the first claim. The flashing alerts take a snapshot of the lights and restore it.
+- Time windows may cross midnight. All times follow Home Assistant's time zone.
 
 ## Development
 
