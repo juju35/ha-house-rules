@@ -110,3 +110,26 @@ test('a translation falls back to English, then to its key', () => {
   assert.equal(S.t({ locale: { language: 'xx' } }, 'acknowledge'), 'Acknowledge');
   assert.equal(S.t({}, 'missing.key'), 'missing.key');
 });
+
+test('the mini card expand button is the 24 px corner button, out of the pill row', () => {
+  const card = new defined['house-rules-mini-card']();
+  card.setConfig({});
+  card._hass = { locale: { language: 'en' }, themes: { darkMode: false }, states: {} };
+  card._data = { rules: [], alerts: [], timers: [] };
+  card._render();
+  const html = card.shadowRoot.innerHTML;
+  assert.match(html, /<div class="hdr has-zoom">/);
+  assert.match(html, /<button class="zoom" id="toggle"[^>]*aria-expanded="false"><ha-icon icon="mdi:arrow-expand">/);
+  assert.ok(!html.split('<div class="hdrc">')[1].includes('id="toggle"'));
+  card._expanded = true;
+  card._hass = { ...card._hass, themes: { darkMode: true } };
+  card._render();
+  assert.match(card.shadowRoot.innerHTML, /<button class="zoom on-night" id="toggle"[^>]*aria-expanded="true"><ha-icon icon="mdi:arrow-collapse">/);
+  const full = new defined['house-rules-card']();
+  full.setConfig({});
+  full._hass = card._hass;
+  full._data = card._data;
+  full._render();
+  assert.ok(!full.shadowRoot.innerHTML.includes('id="toggle"'));
+  assert.ok(full.shadowRoot.innerHTML.includes('<div class="hdr">'));
+});

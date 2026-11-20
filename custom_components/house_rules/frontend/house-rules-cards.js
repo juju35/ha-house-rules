@@ -1346,6 +1346,15 @@ const HR_CSS = `
   .hdr .hr-scene { position: absolute; right: 16px; bottom: 5px; }
   .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--hr-ground); }
   .hdrc { position: absolute; left: 16px; top: 16px; right: 16px; display: flex; align-items: flex-start; gap: 12px; }
+  .hdr.has-zoom .hdrc { right: 36px; }
+  .zoom { all: unset; position: absolute; z-index: 2; top: 5px; right: 5px; cursor: pointer; width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box;
+          display: grid; place-items: center; color: #33506b; background: rgba(255,255,255,.55); box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
+          -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  .zoom:hover { background: rgba(255,255,255,.75); }
+  .zoom.on-night { color: #ffffff; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .zoom.on-night:hover { background: rgba(255,255,255,.22); }
+  .zoom:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
+  .zoom ha-icon { --mdc-icon-size: 16px; display: flex; }
   .ico { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
   .ico ha-icon { --mdc-icon-size: 22px; }
   .ttl { font-weight: 700; font-size: 16px; line-height: 20px; color: var(--primary-text-color); }
@@ -1353,8 +1362,6 @@ const HR_CSS = `
   .grow { flex: 1; min-width: 0; }
   .pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .rbtn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--divider-color); background: color-mix(in srgb, var(--card-background-color) 70%, transparent); color: var(--primary-text-color); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
-  .rbtn ha-icon { --mdc-icon-size: 18px; }
   .body { padding: 16px; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .tile { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: var(--hr-tile); min-width: 0; }
@@ -1461,7 +1468,8 @@ class HouseRulesBase extends HTMLElement {
   header(title, sub, status, tone, button) {
     const rules = this._data?.rules || [];
     const iconTone = tone === 'red' ? 'red' : tone === 'amber' ? 'amber' : 'indigo';
-    return `<div class="hdr">${hrScene(rules, this.night)}<div class="ground"></div><div class="hdrc">${this.icon('house-rules:emblem', iconTone)}<div class="grow"><div class="ttl">${hrEsc(title)}</div><div class="sub">${hrEsc(sub)}</div></div><div class="row" style="align-items:center">${this.pill(status, tone)}${button || ''}</div></div></div>`;
+    // The mini card's expand button sits in the header's top-right corner (24 px, as on the flight board card).
+    return `<div class="hdr${button ? ' has-zoom' : ''}">${hrScene(rules, this.night)}<div class="ground"></div>${button || ''}<div class="hdrc">${this.icon('house-rules:emblem', iconTone)}<div class="grow"><div class="ttl">${hrEsc(title)}</div><div class="sub">${hrEsc(sub)}</div></div><div class="row" style="align-items:center">${this.pill(status, tone)}</div></div></div>`;
   }
 
   frame(inner) {
@@ -1541,7 +1549,7 @@ class HouseRulesCard extends HouseRulesBase {
     let button = '';
     if (!this.constructor.FULL) {
       const label = hrT(this._hass, this._expanded ? 'collapse' : 'expand');
-      button = `<button class="rbtn" id="toggle" aria-label="${label}" title="${label}"><ha-icon icon="${this._expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon></button>`;
+      button = `<button class="zoom${this.night ? ' on-night' : ''}" id="toggle" aria-label="${label}" title="${label}" aria-expanded="${Boolean(this._expanded)}"><ha-icon icon="${this._expanded ? 'mdi:arrow-collapse' : 'mdi:arrow-expand'}"></ha-icon></button>`;
     }
     let body = '';
     if (this.full) {
