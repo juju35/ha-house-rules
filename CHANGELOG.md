@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.1 - 2026-11-20
+
+### Fixes
+- Rooms tab: a room's sections fold with the chevron pointing right when folded and down when open (it pointed down when folded and up when open).
+
+### Maintenance
+- A test checks that the diagnostics redact the notification targets.
+
 ## 1.4.0 - 2026-11-20
 
 ### Features
