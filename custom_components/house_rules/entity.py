@@ -28,7 +28,6 @@ class HouseRulesEntity(Entity):
                 identifiers={(DOMAIN, f"rule_{rule_id}")},
                 name=rule.name,
                 entry_type=DeviceEntryType.SERVICE,
-                via_device=(DOMAIN, "house_rules"),
                 model=rule.type,
             )
 
