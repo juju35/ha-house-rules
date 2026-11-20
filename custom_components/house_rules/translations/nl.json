@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Regels, ruimtes en instellingen worden bewerkt in het House Rules-paneel of in house_rules.yaml (in beide richtingen)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules is al ingesteld."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Ingeschakeld"
+      },
+      "vacation": {
+        "name": "Vakantiemodus"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Status",
+        "state": {
+          "disabled": "Uitgeschakeld",
+          "snoozed": "Gepauzeerd",
+          "idle": "In rust",
+          "armed": "Actief gesteld",
+          "active": "Actief",
+          "alert": "Alarm",
+          "waiting": "Wachtend",
+          "failed": "Mislukt"
+        }
+      },
+      "alerts": {
+        "name": "Actieve alarmen"
+      },
+      "timers": {
+        "name": "Lopende timers"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Testen"
+      },
+      "acknowledge": {
+        "name": "Alarmen bevestigen"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules is niet geladen."
+    },
+    "unknown_rule": {
+      "message": "Onbekende regel: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml is ongeldig",
+      "description": "{file}, regel {line}: {error}\n\nDe laatste geldige configuratie blijft draaien. Bewerken in het paneel is gepauzeerd tot het bestand is hersteld."
+    },
+    "invalid_rules": {
+      "title": "Sommige House Rules-regels zijn ongeldig",
+      "description": "Deze regels zijn niet geladen: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} gaat steeds uit",
+      "description": "{entity} is te vaak achter elkaar weer aangezet: de regel is gestopt met proberen. Controleer het apparaat en gebruik daarna Annuleren op de regel (of de actie house_rules.cancel) om het opnieuw te proberen."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} kon niet worden hervat",
+      "description": "Het apparaat is tijdens hetzelfde programma te vaak weer aangezet: de regel is gestopt met proberen. Controleer het apparaat en gebruik daarna Annuleren op de regel om het opnieuw te proberen."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Een regel testen",
+      "description": "Voert de actie van een of meer regels één keer uit.",
+      "fields": {
+        "rule": {
+          "name": "Regels",
+          "description": "Id's van de regels."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pauzeren",
+      "description": "Pauzeert een of meer regels een tijdje (0 of leeg: nu hervatten).",
+      "fields": {
+        "rule": {
+          "name": "Regels",
+          "description": "Id's van de regels."
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Hoe lang."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Annuleren",
+      "description": "Stopt wat een regel doet (alarm, timers) of vergeet de fouten ervan.",
+      "fields": {
+        "rule": {
+          "name": "Regels",
+          "description": "Id's van de regels."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Bevestigen",
+      "description": "Beëindigt de alarmen (allemaal als er geen regel is opgegeven).",
+      "fields": {
+        "rule": {
+          "name": "Regels",
+          "description": "Id's van de regels."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Timer verlengen",
+      "description": "Voegt minuten toe aan de uitschakeltimer van entiteiten.",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteiten",
+          "description": "Entiteiten met een lopende timer."
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Toe te voegen minuten (negatief: aftrekken)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Opnieuw laden",
+      "description": "Leest house_rules.yaml opnieuw (het bestand wordt ook bewaakt)."
+    },
+    "export_yaml": {
+      "name": "Exporteren als YAML",
+      "description": "Geeft de hele configuratie terug als YAML."
+    }
+  }
+}

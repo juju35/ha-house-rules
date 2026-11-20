@@ -391,7 +391,7 @@ Pick what to import: the rules are added, the rooms merged (existing rooms kept)
 
 ### Cards
 
-All cards share the illustrated header: one object per rule family on the ground bar (plug, lamp, robot, lock, bell, appliance, drop), coloured by the worst state of the family and animated (alert blinking, robot moving, lamp glowing); the night look follows a dark theme, or `illustration_theme`.
+All cards share the illustrated header: one object per rule family on the ground bar (plug, lamp, robot, lock, bell, appliance, drop), coloured by the worst state of the family and animated (alert blinking, robot moving, lamp glowing). At most four objects are drawn: the most urgent families first (an alert always shows), in their usual order; the night look follows a dark theme, or `illustration_theme`.
 
 #### Overview (`custom:house-rules-card`)
 
@@ -494,8 +494,28 @@ The integration follows the language of Home Assistant. Currently supported:
 |---|---|
 | English | `en` |
 | Français | `fr` |
+| Deutsch | `de` |
+| Español | `es` |
+| Italiano | `it` |
+| Nederlands | `nl` |
+| Português | `pt`, `pt-BR` |
+| Polski | `pl` |
+| Српски | `sr` |
+| Srpski (latinica) | `sr-Latn` |
+| Română | `ro` |
+| Dansk | `da` |
+| Svenska | `sv` |
+| Български | `bg` |
+| Русский | `ru` |
+| Українська | `uk` |
+| Magyar | `hu` |
+| Slovenčina | `sk` |
+| Čeština | `cs` |
+| Slovenščina | `sl` |
+| Latviešu | `lv` |
+| Ελληνικά | `el` |
 
-Contributions for additional languages are welcome!
+The integration (config flow, entities, actions, repairs), the panel and the cards are translated in every language above. Corrections and new languages are welcome!
 
 ## License
 

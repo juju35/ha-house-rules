@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Regler, rum og indstillinger redigeres i House Rules-panelet eller i house_rules.yaml (begge veje)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules er allerede sat op."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Aktiveret"
+      },
+      "vacation": {
+        "name": "Ferietilstand"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Tilstand",
+        "state": {
+          "disabled": "Deaktiveret",
+          "snoozed": "På pause",
+          "idle": "Inaktiv",
+          "armed": "Tilkoblet",
+          "active": "Aktiv",
+          "alert": "Alarm",
+          "waiting": "Venter",
+          "failed": "Mislykket"
+        }
+      },
+      "alerts": {
+        "name": "Aktive alarmer"
+      },
+      "timers": {
+        "name": "Kørende timere"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Test"
+      },
+      "acknowledge": {
+        "name": "Kvittér alarmer"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules er ikke indlæst."
+    },
+    "unknown_rule": {
+      "message": "Ukendt regel: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml er ugyldig",
+      "description": "{file}, linje {line}: {error}\n\nDen sidste gyldige konfiguration kører videre. Redigering i panelet er sat på pause, indtil filen er rettet."
+    },
+    "invalid_rules": {
+      "title": "Nogle House Rules-regler er ugyldige",
+      "description": "Disse regler blev ikke indlæst: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} bliver ved med at slukke",
+      "description": "{entity} blev tændt igen for mange gange i træk: reglen er holdt op med at prøve. Tjek enheden, og brug derefter Annuller på reglen (eller handlingen house_rules.cancel) for at prøve igen."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} kunne ikke genoptages",
+      "description": "Apparatet blev tændt igen for mange gange under det samme program: reglen er holdt op med at prøve. Tjek apparatet, og brug derefter Annuller på reglen for at prøve igen."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Test en regel",
+      "description": "Kører handlingen for en eller flere regler én gang.",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernes id'er."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Sæt på pause",
+      "description": "Sætter en eller flere regler på pause et stykke tid (0 eller tom: genoptag nu).",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernes id'er."
+        },
+        "minutes": {
+          "name": "Minutter",
+          "description": "Hvor længe."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Annuller",
+      "description": "Stopper det, en regel er i gang med (alarm, timere), eller glemmer dens fejl.",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernes id'er."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Kvittér",
+      "description": "Afslutter alarmerne (alle, hvis ingen regel er angivet).",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernes id'er."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Forlæng timer",
+      "description": "Lægger minutter til enheders sluk-timer.",
+      "fields": {
+        "entity_id": {
+          "name": "Enheder",
+          "description": "Enheder med en kørende timer."
+        },
+        "minutes": {
+          "name": "Minutter",
+          "description": "Minutter at lægge til (negativ: trække fra)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Genindlæs",
+      "description": "Læser house_rules.yaml igen (filen overvåges også)."
+    },
+    "export_yaml": {
+      "name": "Eksportér som YAML",
+      "description": "Returnerer hele konfigurationen som YAML."
+    }
+  }
+}

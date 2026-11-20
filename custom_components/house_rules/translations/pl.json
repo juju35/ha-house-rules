@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Reguły, pomieszczenia i ustawienia edytuje się w panelu House Rules lub w house_rules.yaml (w obie strony)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules jest już skonfigurowane."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Włączona"
+      },
+      "vacation": {
+        "name": "Tryb urlopowy"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Stan",
+        "state": {
+          "disabled": "Wyłączona",
+          "snoozed": "Wstrzymana",
+          "idle": "Bezczynna",
+          "armed": "Uzbrojona",
+          "active": "Aktywna",
+          "alert": "Alarm",
+          "waiting": "Oczekuje",
+          "failed": "Niepowodzenie"
+        }
+      },
+      "alerts": {
+        "name": "Aktywne alarmy"
+      },
+      "timers": {
+        "name": "Działające minutniki"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Testuj"
+      },
+      "acknowledge": {
+        "name": "Potwierdź alarmy"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules nie jest załadowane."
+    },
+    "unknown_rule": {
+      "message": "Nieznana reguła: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml jest nieprawidłowy",
+      "description": "{file}, wiersz {line}: {error}\n\nOstatnia poprawna konfiguracja nadal działa. Edycja w panelu jest wstrzymana do czasu poprawienia pliku."
+    },
+    "invalid_rules": {
+      "title": "Niektóre reguły House Rules są nieprawidłowe",
+      "description": "Te reguły nie zostały załadowane: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} ciągle się wyłącza",
+      "description": "{entity} był włączany ponownie zbyt wiele razy z rzędu: reguła przestała próbować. Sprawdź urządzenie, a następnie użyj Anuluj na regule (lub akcji house_rules.cancel), aby spróbować ponownie."
+    },
+    "resume_failed": {
+      "title": "{rule}: nie udało się wznowić {entity}",
+      "description": "Urządzenie było włączane ponownie zbyt wiele razy w trakcie tego samego programu: reguła przestała próbować. Sprawdź urządzenie, a następnie użyj Anuluj na regule, aby spróbować ponownie."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Testuj regułę",
+      "description": "Wykonuje jeden raz akcję jednej lub kilku reguł.",
+      "fields": {
+        "rule": {
+          "name": "Reguły",
+          "description": "Identyfikatory reguł."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Wstrzymaj",
+      "description": "Wstrzymuje jedną lub kilka reguł na pewien czas (0 lub puste: wznów teraz).",
+      "fields": {
+        "rule": {
+          "name": "Reguły",
+          "description": "Identyfikatory reguł."
+        },
+        "minutes": {
+          "name": "Minuty",
+          "description": "Na jak długo."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Anuluj",
+      "description": "Zatrzymuje to, co robi reguła (alarm, minutniki), lub zapomina jej błędy.",
+      "fields": {
+        "rule": {
+          "name": "Reguły",
+          "description": "Identyfikatory reguł."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Potwierdź",
+      "description": "Kończy alarmy (wszystkie, gdy nie podano reguły).",
+      "fields": {
+        "rule": {
+          "name": "Reguły",
+          "description": "Identyfikatory reguł."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Przedłuż minutnik",
+      "description": "Dodaje minuty do minutnika wyłączenia encji.",
+      "fields": {
+        "entity_id": {
+          "name": "Encje",
+          "description": "Encje z działającym minutnikiem."
+        },
+        "minutes": {
+          "name": "Minuty",
+          "description": "Minuty do dodania (ujemne: odjęcie)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Przeładuj",
+      "description": "Ponownie wczytuje house_rules.yaml (plik jest też obserwowany)."
+    },
+    "export_yaml": {
+      "name": "Eksportuj do YAML",
+      "description": "Zwraca całą konfigurację w formacie YAML."
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Noteikumus, telpas un iestatījumus rediģē House Rules panelī vai house_rules.yaml (abos virzienos)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules jau ir iestatīts."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Iespējots"
+      },
+      "vacation": {
+        "name": "Atvaļinājuma režīms"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Stāvoklis",
+        "state": {
+          "disabled": "Atspējots",
+          "snoozed": "Apturēts",
+          "idle": "Dīkstāvē",
+          "armed": "Aktivizēts",
+          "active": "Aktīvs",
+          "alert": "Trauksme",
+          "waiting": "Gaida",
+          "failed": "Neizdevās"
+        }
+      },
+      "alerts": {
+        "name": "Aktīvās trauksmes"
+      },
+      "timers": {
+        "name": "Darbojošies taimeri"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Pārbaudīt"
+      },
+      "acknowledge": {
+        "name": "Apstiprināt trauksmes"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules nav ielādēts."
+    },
+    "unknown_rule": {
+      "message": "Nezināms noteikums: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml nav derīgs",
+      "description": "{file}, rinda {line}: {error}\n\nPēdējā derīgā konfigurācija turpina darboties. Rediģēšana panelī ir apturēta, līdz fails tiek izlabots."
+    },
+    "invalid_rules": {
+      "title": "Daži House Rules noteikumi nav derīgi",
+      "description": "Šie noteikumi netika ielādēti: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} pastāvīgi izslēdzas",
+      "description": "{entity} tika pārāk daudz reižu pēc kārtas ieslēgts atkārtoti: noteikums pārtrauca mēģināt. Pārbaudiet ierīci, pēc tam izmantojiet Atcelt pie noteikuma (vai darbību house_rules.cancel), lai mēģinātu vēlreiz."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} neizdevās atsākt",
+      "description": "Ierīce tās pašas programmas laikā tika pārāk daudz reižu ieslēgta atkārtoti: noteikums pārtrauca mēģināt. Pārbaudiet ierīci, pēc tam izmantojiet Atcelt pie noteikuma, lai mēģinātu vēlreiz."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Pārbaudīt noteikumu",
+      "description": "Vienreiz izpilda viena vai vairāku noteikumu darbību.",
+      "fields": {
+        "rule": {
+          "name": "Noteikumi",
+          "description": "Noteikumu ID."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Apturēt",
+      "description": "Uz laiku aptur vienu vai vairākus noteikumus (0 vai tukšs: atsākt tagad).",
+      "fields": {
+        "rule": {
+          "name": "Noteikumi",
+          "description": "Noteikumu ID."
+        },
+        "minutes": {
+          "name": "Minūtes",
+          "description": "Cik ilgi."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Atcelt",
+      "description": "Aptur to, ko noteikums dara (trauksmi, taimerus), vai aizmirst tā kļūdas.",
+      "fields": {
+        "rule": {
+          "name": "Noteikumi",
+          "description": "Noteikumu ID."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Apstiprināt",
+      "description": "Beidz trauksmes (visas, ja noteikums nav norādīts).",
+      "fields": {
+        "rule": {
+          "name": "Noteikumi",
+          "description": "Noteikumu ID."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Pagarināt taimeri",
+      "description": "Pievieno minūtes entītiju izslēgšanas taimerim.",
+      "fields": {
+        "entity_id": {
+          "name": "Entītijas",
+          "description": "Entītijas ar darbojošos taimeri."
+        },
+        "minutes": {
+          "name": "Minūtes",
+          "description": "Pievienojamās minūtes (negatīvas: atņemt)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Pārlādēt",
+      "description": "Atkārtoti nolasa house_rules.yaml (fails tiek arī uzraudzīts)."
+    },
+    "export_yaml": {
+      "name": "Eksportēt kā YAML",
+      "description": "Atgriež visu konfigurāciju YAML formātā."
+    }
+  }
+}

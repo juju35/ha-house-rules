@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Regeln, Räume und Einstellungen werden im House-Rules-Panel oder in house_rules.yaml bearbeitet (in beide Richtungen)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules ist bereits eingerichtet."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Aktiviert"
+      },
+      "vacation": {
+        "name": "Urlaubsmodus"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Zustand",
+        "state": {
+          "disabled": "Deaktiviert",
+          "snoozed": "Pausiert",
+          "idle": "Ruhend",
+          "armed": "Scharf",
+          "active": "Aktiv",
+          "alert": "Alarm",
+          "waiting": "Wartet",
+          "failed": "Fehlgeschlagen"
+        }
+      },
+      "alerts": {
+        "name": "Aktive Alarme"
+      },
+      "timers": {
+        "name": "Laufende Timer"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Testen"
+      },
+      "acknowledge": {
+        "name": "Alarme bestätigen"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules ist nicht geladen."
+    },
+    "unknown_rule": {
+      "message": "Unbekannte Regel: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml ist ungültig",
+      "description": "{file}, Zeile {line}: {error}\n\nDie letzte gültige Konfiguration läuft weiter. Die Bearbeitung im Panel ist pausiert, bis die Datei korrigiert ist."
+    },
+    "invalid_rules": {
+      "title": "Einige House-Rules-Regeln sind ungültig",
+      "description": "Diese Regeln wurden nicht geladen: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} schaltet sich immer wieder aus",
+      "description": "{entity} wurde zu oft hintereinander wieder eingeschaltet: Die Regel hat aufgehört. Prüfe das Gerät und nutze dann Abbrechen bei der Regel (oder die Aktion house_rules.cancel), um es erneut zu versuchen."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} konnte nicht neu gestartet werden",
+      "description": "Das Gerät wurde während desselben Programms zu oft wieder eingeschaltet: Die Regel hat aufgehört. Prüfe das Gerät und nutze dann Abbrechen bei der Regel, um es erneut zu versuchen."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Regel testen",
+      "description": "Führt die Aktion einer oder mehrerer Regeln einmal aus.",
+      "fields": {
+        "rule": {
+          "name": "Regeln",
+          "description": "IDs der Regeln."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pausieren",
+      "description": "Pausiert eine oder mehrere Regeln für eine Weile (0 oder leer: jetzt fortsetzen).",
+      "fields": {
+        "rule": {
+          "name": "Regeln",
+          "description": "IDs der Regeln."
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Wie lange."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Abbrechen",
+      "description": "Stoppt, was eine Regel gerade tut (Alarm, Timer), oder vergisst ihre Fehler.",
+      "fields": {
+        "rule": {
+          "name": "Regeln",
+          "description": "IDs der Regeln."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Bestätigen",
+      "description": "Beendet die Alarme (alle, wenn keine Regel angegeben ist).",
+      "fields": {
+        "rule": {
+          "name": "Regeln",
+          "description": "IDs der Regeln."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Timer verlängern",
+      "description": "Fügt dem Ausschalt-Timer von Entitäten Minuten hinzu.",
+      "fields": {
+        "entity_id": {
+          "name": "Entitäten",
+          "description": "Entitäten mit laufendem Timer."
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Hinzuzufügende Minuten (negativ: abziehen)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Neu laden",
+      "description": "Liest house_rules.yaml erneut (die Datei wird auch überwacht)."
+    },
+    "export_yaml": {
+      "name": "Als YAML exportieren",
+      "description": "Gibt die gesamte Konfiguration als YAML zurück."
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Pravidlá, miestnosti a nastavenia sa upravujú v paneli House Rules alebo v house_rules.yaml (oboma smermi)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules je už nastavené."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Zapnuté"
+      },
+      "vacation": {
+        "name": "Režim dovolenky"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Stav",
+        "state": {
+          "disabled": "Vypnuté",
+          "snoozed": "Pozastavené",
+          "idle": "V pokoji",
+          "armed": "Aktivované",
+          "active": "Aktívne",
+          "alert": "Poplach",
+          "waiting": "Čaká",
+          "failed": "Zlyhalo"
+        }
+      },
+      "alerts": {
+        "name": "Aktívne poplachy"
+      },
+      "timers": {
+        "name": "Bežiace časovače"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Otestovať"
+      },
+      "acknowledge": {
+        "name": "Potvrdiť poplachy"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules nie je načítané."
+    },
+    "unknown_rule": {
+      "message": "Neznáme pravidlo: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml je neplatný",
+      "description": "{file}, riadok {line}: {error}\n\nPosledná platná konfigurácia beží ďalej. Úpravy v paneli sú pozastavené, kým súbor neopravíte."
+    },
+    "invalid_rules": {
+      "title": "Niektoré pravidlá House Rules sú neplatné",
+      "description": "Tieto pravidlá neboli načítané: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} sa stále vypína",
+      "description": "{entity} bol znovu zapnutý príliš veľakrát po sebe: pravidlo prestalo skúšať. Skontrolujte zariadenie a potom použite Zrušiť pri pravidle (alebo akciu house_rules.cancel) na nový pokus."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} sa nepodarilo obnoviť",
+      "description": "Spotrebič bol počas toho istého programu znovu zapnutý príliš veľakrát: pravidlo prestalo skúšať. Skontrolujte spotrebič a potom použite Zrušiť pri pravidle na nový pokus."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Otestovať pravidlo",
+      "description": "Raz spustí akciu jedného alebo viacerých pravidiel.",
+      "fields": {
+        "rule": {
+          "name": "Pravidlá",
+          "description": "ID pravidiel."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pozastaviť",
+      "description": "Na chvíľu pozastaví jedno alebo viac pravidiel (0 alebo prázdne: obnoviť hneď).",
+      "fields": {
+        "rule": {
+          "name": "Pravidlá",
+          "description": "ID pravidiel."
+        },
+        "minutes": {
+          "name": "Minúty",
+          "description": "Ako dlho."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Zrušiť",
+      "description": "Zastaví, čo pravidlo práve robí (poplach, časovače), alebo zabudne jeho chyby.",
+      "fields": {
+        "rule": {
+          "name": "Pravidlá",
+          "description": "ID pravidiel."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Potvrdiť",
+      "description": "Ukončí poplachy (všetky, ak nie je zadané pravidlo).",
+      "fields": {
+        "rule": {
+          "name": "Pravidlá",
+          "description": "ID pravidiel."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Predĺžiť časovač",
+      "description": "Pridá minúty k časovaču vypnutia entít.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity",
+          "description": "Entity s bežiacim časovačom."
+        },
+        "minutes": {
+          "name": "Minúty",
+          "description": "Minúty na pridanie (záporné: ubrať)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Znovu načítať",
+      "description": "Znovu načíta house_rules.yaml (súbor je aj sledovaný)."
+    },
+    "export_yaml": {
+      "name": "Exportovať ako YAML",
+      "description": "Vráti celú konfiguráciu ako YAML."
+    }
+  }
+}

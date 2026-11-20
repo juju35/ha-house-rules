@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Pravila, prostorije i podešavanja uređuju se u panelu House Rules ili u house_rules.yaml (u oba smera)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules je već podešen."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Uključeno"
+      },
+      "vacation": {
+        "name": "Režim odmora"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Stanje",
+        "state": {
+          "disabled": "Isključeno",
+          "snoozed": "Pauzirano",
+          "idle": "Miruje",
+          "armed": "Aktivirano",
+          "active": "Aktivno",
+          "alert": "Uzbuna",
+          "waiting": "Čeka",
+          "failed": "Neuspeh"
+        }
+      },
+      "alerts": {
+        "name": "Aktivne uzbune"
+      },
+      "timers": {
+        "name": "Aktivni tajmeri"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Testiraj"
+      },
+      "acknowledge": {
+        "name": "Potvrdi uzbune"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules nije učitan."
+    },
+    "unknown_rule": {
+      "message": "Nepoznato pravilo: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml nije ispravan",
+      "description": "{file}, red {line}: {error}\n\nPoslednja ispravna konfiguracija i dalje radi. Izmene u panelu su pauzirane dok se datoteka ne popravi."
+    },
+    "invalid_rules": {
+      "title": "Neka pravila House Rules nisu ispravna",
+      "description": "Ova pravila nisu učitana: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} se stalno isključuje",
+      "description": "{entity} je previše puta zaredom ponovo uključen: pravilo je prestalo da pokušava. Proverite uređaj, zatim upotrebite Otkaži na pravilu (ili radnju house_rules.cancel) za novi pokušaj."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} nije moguće nastaviti",
+      "description": "Aparat je previše puta ponovo uključen tokom istog programa: pravilo je prestalo da pokušava. Proverite aparat, zatim upotrebite Otkaži na pravilu za novi pokušaj."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Testiraj pravilo",
+      "description": "Jednom izvodi radnju jednog ili više pravila.",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID pravila."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pauziraj",
+      "description": "Pauzira jedno ili više pravila na neko vreme (0 ili prazno: nastavi odmah).",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID pravila."
+        },
+        "minutes": {
+          "name": "Minuti",
+          "description": "Koliko dugo."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Otkaži",
+      "description": "Zaustavlja ono što pravilo radi (uzbuna, tajmeri) ili zaboravlja njegove neuspehe.",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID pravila."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Potvrdi",
+      "description": "Završava uzbune (sve, ako pravilo nije navedeno).",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID pravila."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Produži tajmer",
+      "description": "Dodaje minute tajmeru isključenja entiteta.",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteti",
+          "description": "Entiteti sa aktivnim tajmerom."
+        },
+        "minutes": {
+          "name": "Minuti",
+          "description": "Minuti za dodavanje (negativno: oduzimanje)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Ponovo učitaj",
+      "description": "Ponovo čita house_rules.yaml (datoteka se i nadzire)."
+    },
+    "export_yaml": {
+      "name": "Izvezi kao YAML",
+      "description": "Vraća celu konfiguraciju kao YAML."
+    }
+  }
+}

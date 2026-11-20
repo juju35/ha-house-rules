@@ -59,7 +59,7 @@ This is a **standalone integration** (its own integration, panel and cards): it 
 
 ## Translations
 - English is the source. Keep every language in sync when a user-facing string changes.
-- Languages to keep in sync: en, fr, de, es, it, nl, pt, pl, sr, sr-Latn, ro, da, sv, bg, ru, uk, hu, sk, cs, sl, lv, el (no Irish or Maltese). 1.0.0 ships en and fr; the others are to add.
+- Languages to keep in sync: en, fr, de, es, it, nl, pt, pl, sr, sr-Latn, ro, da, sv, bg, ru, uk, hu, sk, cs, sl, lv, el (no Irish or Maltese). All of them ship since 1.1.0 (plus `pt-BR`, a copy of `pt`, for the integration strings).
 - Integration strings: `custom_components/house_rules/translations/*.json` (all languages).
 - Panel and card strings: `HRP_STRINGS` (panel) and `HR_STRINGS` (cards, also the type/state/result labels the panel reuses).
 
