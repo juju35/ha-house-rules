@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.1 - 2026-11-20
+
+### Fixes
+- Rooms tab: a room's sections fold with the chevron pointing right when folded and down when open (it pointed down when folded and up when open).
+- Mini card: the expand / fold button is the 24 px frosted corner button (`arrow-expand` / `arrow-collapse`) of the other mini cards, in the header's top-right corner, instead of a 36 px chevron next to the status pill.
+- Diagnostics also redact the notification texts (`message`) and the rooms' presence entities (`presence`), which can carry people's names.
+- Disabling or reloading the integration removes its sidebar panel (it stayed, showing "not loaded"); setup adds it back.
+
+### Maintenance
+- A test checks that the diagnostics redact the notification targets, texts and presence entities.
+- Tests of the panel and card resources registration (panel.py coverage 27 % → 86 %).
+
 ## 1.4.0 - 2026-11-20
 
 ### Features

@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.4.0';
+const HOUSE_RULES_PANEL_VERSION = '1.4.1';
 
 // Rooms tab: the sections of a room (as on Smart Comfort's Rooms tab), the entities each field takes, the list fields.
 const HRP_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -3398,7 +3398,7 @@ class HouseRulesPanel extends HTMLElement {
     const summary = s.naps
       ? (room.naps || []).map((n) => (typeof n === 'string' ? this.friendly(n) : `${String(n.start).slice(0, 5)}–${String(n.end).slice(0, 5)}`)).join(', ')
       : s.fields.flatMap((f) => this.roomValues(room, f.f).filter(Boolean).map((e) => this.friendly(e))).join(', ');
-    const head = `<button class="sechead" data-fold-sec="${i}|${s.key}" aria-expanded="${!folded}"><ha-icon icon="${s.icon}"></ha-icon><span class="grow">${this.t(`rm_${s.key}`)}</span><span class="sub small secsum">${hrpEsc(summary)}</span><ha-icon icon="mdi:chevron-${folded ? 'down' : 'up'}"></ha-icon></button>`;
+    const head = `<button class="sechead" data-fold-sec="${i}|${s.key}" aria-expanded="${!folded}"><ha-icon icon="${s.icon}"></ha-icon><span class="grow">${this.t(`rm_${s.key}`)}</span><span class="sub small secsum">${hrpEsc(summary)}</span><ha-icon icon="mdi:chevron-${folded ? 'right' : 'down'}"></ha-icon></button>`;
     if (folded) return `<div class="sec">${head}</div>`;
     let body;
     if (s.naps) {
