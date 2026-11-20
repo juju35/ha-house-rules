@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 - 2026-11-20
+
+### Features
+- 20 new languages for the integration, the panel and the cards: German, Spanish, Italian, Dutch, Portuguese
+  (and Brazilian Portuguese for the integration), Polish, Serbian (Cyrillic and Latin), Romanian, Danish, Swedish,
+  Bulgarian, Russian, Ukrainian, Hungarian, Slovak, Czech, Slovenian, Latvian and Greek.
+
 ## 1.0.1 - 2026-11-20
 
 ### Fixes

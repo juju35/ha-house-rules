@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Правила, просторије и подешавања уређују се у панелу House Rules или у house_rules.yaml (у оба смера)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules је већ подешен."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Укључено"
+      },
+      "vacation": {
+        "name": "Режим одмора"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Стање",
+        "state": {
+          "disabled": "Искључено",
+          "snoozed": "Паузирано",
+          "idle": "Мирује",
+          "armed": "Активирано",
+          "active": "Активно",
+          "alert": "Узбуна",
+          "waiting": "Чека",
+          "failed": "Неуспех"
+        }
+      },
+      "alerts": {
+        "name": "Активне узбуне"
+      },
+      "timers": {
+        "name": "Активни тајмери"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Тестирај"
+      },
+      "acknowledge": {
+        "name": "Потврди узбуне"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules није учитан."
+    },
+    "unknown_rule": {
+      "message": "Непознато правило: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml није исправан",
+      "description": "{file}, ред {line}: {error}\n\nПоследња исправна конфигурација и даље ради. Измене у панелу су паузиране док се датотека не поправи."
+    },
+    "invalid_rules": {
+      "title": "Нека правила House Rules нису исправна",
+      "description": "Ова правила нису учитана: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} се стално искључује",
+      "description": "{entity} је превише пута заредом поново укључен: правило је престало да покушава. Проверите уређај, затим употребите Откажи на правилу (или радњу house_rules.cancel) за нови покушај."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} није могуће наставити",
+      "description": "Апарат је превише пута поново укључен током истог програма: правило је престало да покушава. Проверите апарат, затим употребите Откажи на правилу за нови покушај."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Тестирај правило",
+      "description": "Једном изводи радњу једног или више правила.",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правила."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Паузирај",
+      "description": "Паузира једно или више правила на неко време (0 или празно: настави одмах).",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правила."
+        },
+        "minutes": {
+          "name": "Минути",
+          "description": "Колико дуго."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Откажи",
+      "description": "Зауставља оно што правило ради (узбуна, тајмери) или заборавља његове неуспехе.",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правила."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Потврди",
+      "description": "Завршава узбуне (све, ако правило није наведено).",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правила."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Продужи тајмер",
+      "description": "Додаје минуте тајмеру искључења ентитета.",
+      "fields": {
+        "entity_id": {
+          "name": "Ентитети",
+          "description": "Ентитети са активним тајмером."
+        },
+        "minutes": {
+          "name": "Минути",
+          "description": "Минути за додавање (негативно: одузимање)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Поново учитај",
+      "description": "Поново чита house_rules.yaml (датотека се и надзире)."
+    },
+    "export_yaml": {
+      "name": "Извези као YAML",
+      "description": "Враћа целу конфигурацију као YAML."
+    }
+  }
+}

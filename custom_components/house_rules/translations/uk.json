@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Правила, кімнати й налаштування редагуються в панелі House Rules або в house_rules.yaml (в обидва боки)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules уже налаштовано."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Увімкнено"
+      },
+      "vacation": {
+        "name": "Режим відпустки"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Стан",
+        "state": {
+          "disabled": "Вимкнено",
+          "snoozed": "Призупинено",
+          "idle": "Очікування",
+          "armed": "Зведено",
+          "active": "Активно",
+          "alert": "Тривога",
+          "waiting": "Чекає",
+          "failed": "Збій"
+        }
+      },
+      "alerts": {
+        "name": "Активні тривоги"
+      },
+      "timers": {
+        "name": "Запущені таймери"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Перевірити"
+      },
+      "acknowledge": {
+        "name": "Підтвердити тривоги"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules не завантажено."
+    },
+    "unknown_rule": {
+      "message": "Невідоме правило: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml недійсний",
+      "description": "{file}, рядок {line}: {error}\n\nОстання робоча конфігурація продовжує працювати. Зміни в панелі призупинено, доки файл не виправлено."
+    },
+    "invalid_rules": {
+      "title": "Деякі правила House Rules недійсні",
+      "description": "Ці правила не завантажено: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} постійно вимикається",
+      "description": "{entity} вмикали повторно забагато разів поспіль: правило припинило спроби. Перевірте пристрій, потім натисніть Скасувати біля правила (або дію house_rules.cancel), щоб спробувати знову."
+    },
+    "resume_failed": {
+      "title": "{rule}: не вдалося відновити {entity}",
+      "description": "Прилад вмикали повторно забагато разів за одну програму: правило припинило спроби. Перевірте прилад, потім натисніть Скасувати біля правила, щоб спробувати знову."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Перевірити правило",
+      "description": "Один раз виконує дію одного або кількох правил.",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правил."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Призупинити",
+      "description": "Призупиняє одне або кілька правил на певний час (0 або порожньо: відновити зараз).",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правил."
+        },
+        "minutes": {
+          "name": "Хвилини",
+          "description": "Як довго."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Скасувати",
+      "description": "Зупиняє поточну дію правила (тривогу, таймери) або скидає його збої.",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правил."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Підтвердити",
+      "description": "Завершує тривоги (усі, якщо правило не вказано).",
+      "fields": {
+        "rule": {
+          "name": "Правила",
+          "description": "ID правил."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Подовжити таймер",
+      "description": "Додає хвилини до таймера вимкнення об'єктів.",
+      "fields": {
+        "entity_id": {
+          "name": "Об'єкти",
+          "description": "Об'єкти із запущеним таймером."
+        },
+        "minutes": {
+          "name": "Хвилини",
+          "description": "Скільки хвилин додати (від'ємне: зменшити)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Перезавантажити",
+      "description": "Перечитує house_rules.yaml (файл також відстежується)."
+    },
+    "export_yaml": {
+      "name": "Експорт у YAML",
+      "description": "Повертає всю конфігурацію у вигляді YAML."
+    }
+  }
+}

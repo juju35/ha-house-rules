@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "A szabályokat, helyiségeket és beállításokat a House Rules panelen vagy a house_rules.yaml fájlban lehet szerkeszteni (mindkét irányban)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "A House Rules már be van állítva."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Engedélyezve"
+      },
+      "vacation": {
+        "name": "Szabadság mód"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Állapot",
+        "state": {
+          "disabled": "Letiltva",
+          "snoozed": "Szüneteltetve",
+          "idle": "Tétlen",
+          "armed": "Élesítve",
+          "active": "Aktív",
+          "alert": "Riasztás",
+          "waiting": "Várakozik",
+          "failed": "Sikertelen"
+        }
+      },
+      "alerts": {
+        "name": "Aktív riasztások"
+      },
+      "timers": {
+        "name": "Futó időzítők"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Teszt"
+      },
+      "acknowledge": {
+        "name": "Riasztások nyugtázása"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "A House Rules nincs betöltve."
+    },
+    "unknown_rule": {
+      "message": "Ismeretlen szabály: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "A house_rules.yaml érvénytelen",
+      "description": "{file}, {line}. sor: {error}\n\nAz utolsó érvényes konfiguráció tovább fut. A panelen a szerkesztés szünetel, amíg a fájlt ki nem javítod."
+    },
+    "invalid_rules": {
+      "title": "Néhány House Rules szabály érvénytelen",
+      "description": "Ezek a szabályok nem töltődtek be: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} folyton kikapcsol",
+      "description": "{entity} túl sokszor lett egymás után visszakapcsolva: a szabály felhagyott a próbálkozással. Ellenőrizd az eszközt, majd használd a Mégse gombot a szabálynál (vagy a house_rules.cancel műveletet) az újrapróbáláshoz."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} nem folytatható",
+      "description": "A készülék ugyanazon program alatt túl sokszor lett visszakapcsolva: a szabály felhagyott a próbálkozással. Ellenőrizd a készüléket, majd használd a Mégse gombot a szabálynál az újrapróbáláshoz."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Szabály tesztelése",
+      "description": "Egyszer lefuttatja egy vagy több szabály műveletét.",
+      "fields": {
+        "rule": {
+          "name": "Szabályok",
+          "description": "A szabályok azonosítói."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Szüneteltetés",
+      "description": "Egy vagy több szabályt egy időre szüneteltet (0 vagy üres: folytatás most).",
+      "fields": {
+        "rule": {
+          "name": "Szabályok",
+          "description": "A szabályok azonosítói."
+        },
+        "minutes": {
+          "name": "Percek",
+          "description": "Meddig."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Mégse",
+      "description": "Leállítja, amit egy szabály éppen csinál (riasztás, időzítők), vagy elfelejti a hibáit.",
+      "fields": {
+        "rule": {
+          "name": "Szabályok",
+          "description": "A szabályok azonosítói."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Nyugtázás",
+      "description": "Befejezi a riasztásokat (mindet, ha nincs megadva szabály).",
+      "fields": {
+        "rule": {
+          "name": "Szabályok",
+          "description": "A szabályok azonosítói."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Időzítő meghosszabbítása",
+      "description": "Perceket ad az entitások kikapcsolási időzítőjéhez.",
+      "fields": {
+        "entity_id": {
+          "name": "Entitások",
+          "description": "Futó időzítővel rendelkező entitások."
+        },
+        "minutes": {
+          "name": "Percek",
+          "description": "Hozzáadandó percek (negatív: levonás)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Újratöltés",
+      "description": "Újra beolvassa a house_rules.yaml fájlt (a fájlt figyeli is)."
+    },
+    "export_yaml": {
+      "name": "Exportálás YAML-ként",
+      "description": "A teljes konfigurációt YAML-ként adja vissza."
+    }
+  }
+}

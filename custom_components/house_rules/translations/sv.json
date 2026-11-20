@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Regler, rum och inställningar redigeras i House Rules-panelen eller i house_rules.yaml (åt båda hållen)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules är redan konfigurerat."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Aktiverad"
+      },
+      "vacation": {
+        "name": "Semesterläge"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Tillstånd",
+        "state": {
+          "disabled": "Inaktiverad",
+          "snoozed": "Pausad",
+          "idle": "Vilande",
+          "armed": "Aktiverad",
+          "active": "Aktiv",
+          "alert": "Larm",
+          "waiting": "Väntar",
+          "failed": "Misslyckad"
+        }
+      },
+      "alerts": {
+        "name": "Aktiva larm"
+      },
+      "timers": {
+        "name": "Pågående timers"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Testa"
+      },
+      "acknowledge": {
+        "name": "Kvittera larm"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules är inte laddat."
+    },
+    "unknown_rule": {
+      "message": "Okänd regel: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml är ogiltig",
+      "description": "{file}, rad {line}: {error}\n\nDen senaste giltiga konfigurationen fortsätter köras. Redigering i panelen är pausad tills filen är rättad."
+    },
+    "invalid_rules": {
+      "title": "Vissa House Rules-regler är ogiltiga",
+      "description": "Dessa regler laddades inte: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} stängs av hela tiden",
+      "description": "{entity} slogs på igen för många gånger i rad: regeln har slutat försöka. Kontrollera enheten och använd sedan Avbryt på regeln (eller åtgärden house_rules.cancel) för att försöka igen."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} kunde inte återupptas",
+      "description": "Apparaten slogs på igen för många gånger under samma program: regeln har slutat försöka. Kontrollera apparaten och använd sedan Avbryt på regeln för att försöka igen."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Testa en regel",
+      "description": "Kör åtgärden för en eller flera regler en gång.",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernas id."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pausa",
+      "description": "Pausar en eller flera regler en stund (0 eller tomt: återuppta nu).",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernas id."
+        },
+        "minutes": {
+          "name": "Minuter",
+          "description": "Hur länge."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Avbryt",
+      "description": "Stoppar det en regel gör (larm, timers) eller glömmer dess fel.",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernas id."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Kvittera",
+      "description": "Avslutar larmen (alla om ingen regel anges).",
+      "fields": {
+        "rule": {
+          "name": "Regler",
+          "description": "Reglernas id."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Förläng timer",
+      "description": "Lägger till minuter på entiteters avstängningstimer.",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteter",
+          "description": "Entiteter med en pågående timer."
+        },
+        "minutes": {
+          "name": "Minuter",
+          "description": "Minuter att lägga till (negativt: dra av)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Ladda om",
+      "description": "Läser house_rules.yaml igen (filen bevakas också)."
+    },
+    "export_yaml": {
+      "name": "Exportera som YAML",
+      "description": "Returnerar hela konfigurationen som YAML."
+    }
+  }
+}

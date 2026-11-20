@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Las reglas, habitaciones y ajustes se editan en el panel House Rules o en house_rules.yaml (en ambos sentidos)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules ya está configurado."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Activada"
+      },
+      "vacation": {
+        "name": "Modo vacaciones"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Estado",
+        "state": {
+          "disabled": "Desactivada",
+          "snoozed": "En pausa",
+          "idle": "En reposo",
+          "armed": "Armada",
+          "active": "Activa",
+          "alert": "Alerta",
+          "waiting": "En espera",
+          "failed": "Fallida"
+        }
+      },
+      "alerts": {
+        "name": "Alertas activas"
+      },
+      "timers": {
+        "name": "Temporizadores en marcha"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Probar"
+      },
+      "acknowledge": {
+        "name": "Confirmar las alertas"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules no está cargado."
+    },
+    "unknown_rule": {
+      "message": "Regla desconocida: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml no es válido",
+      "description": "{file}, línea {line}: {error}\n\nLa última configuración válida sigue funcionando. La edición en el panel está en pausa hasta que se corrija el archivo."
+    },
+    "invalid_rules": {
+      "title": "Algunas reglas de House Rules no son válidas",
+      "description": "Estas reglas no se cargaron: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} se sigue apagando",
+      "description": "{entity} se volvió a encender demasiadas veces seguidas: la regla dejó de intentarlo. Revisa el dispositivo y luego usa Cancelar en la regla (o la acción house_rules.cancel) para volver a intentarlo."
+    },
+    "resume_failed": {
+      "title": "{rule}: no se pudo reanudar {entity}",
+      "description": "El aparato se volvió a encender demasiadas veces durante el mismo programa: la regla dejó de intentarlo. Revisa el aparato y luego usa Cancelar en la regla para volver a intentarlo."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Probar una regla",
+      "description": "Ejecuta una vez la acción de una o varias reglas.",
+      "fields": {
+        "rule": {
+          "name": "Reglas",
+          "description": "Identificadores de las reglas."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pausar",
+      "description": "Pausa una o varias reglas durante un tiempo (0 o vacío: reanudar ahora).",
+      "fields": {
+        "rule": {
+          "name": "Reglas",
+          "description": "Identificadores de las reglas."
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Cuánto tiempo."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Cancelar",
+      "description": "Detiene lo que hace una regla (alerta, temporizadores) u olvida sus fallos.",
+      "fields": {
+        "rule": {
+          "name": "Reglas",
+          "description": "Identificadores de las reglas."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Confirmar",
+      "description": "Termina las alertas (todas si no se indica ninguna regla).",
+      "fields": {
+        "rule": {
+          "name": "Reglas",
+          "description": "Identificadores de las reglas."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Prolongar el temporizador",
+      "description": "Añade minutos al temporizador de apagado de unas entidades.",
+      "fields": {
+        "entity_id": {
+          "name": "Entidades",
+          "description": "Entidades con un temporizador en marcha."
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Minutos que añadir (negativo: quitar)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Recargar",
+      "description": "Vuelve a leer house_rules.yaml (el archivo también se vigila)."
+    },
+    "export_yaml": {
+      "name": "Exportar en YAML",
+      "description": "Devuelve toda la configuración en YAML."
+    }
+  }
+}

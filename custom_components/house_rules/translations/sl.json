@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Pravila, prostori in nastavitve se urejajo v plošči House Rules ali v house_rules.yaml (v obe smeri)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules je že nastavljen."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Omogočeno"
+      },
+      "vacation": {
+        "name": "Način dopusta"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Stanje",
+        "state": {
+          "disabled": "Onemogočeno",
+          "snoozed": "Začasno ustavljeno",
+          "idle": "Mirovanje",
+          "armed": "Vklopljeno",
+          "active": "Aktivno",
+          "alert": "Alarm",
+          "waiting": "Čaka",
+          "failed": "Ni uspelo"
+        }
+      },
+      "alerts": {
+        "name": "Aktivni alarmi"
+      },
+      "timers": {
+        "name": "Delujoči časovniki"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Preizkusi"
+      },
+      "acknowledge": {
+        "name": "Potrdi alarme"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules ni naložen."
+    },
+    "unknown_rule": {
+      "message": "Neznano pravilo: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml ni veljaven",
+      "description": "{file}, vrstica {line}: {error}\n\nZadnja veljavna konfiguracija še naprej deluje. Urejanje v plošči je ustavljeno, dokler datoteka ni popravljena."
+    },
+    "invalid_rules": {
+      "title": "Nekatera pravila House Rules niso veljavna",
+      "description": "Ta pravila niso bila naložena: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} se kar naprej izklaplja",
+      "description": "{entity} je bil preveliko krat zapored ponovno vklopljen: pravilo je nehalo poskušati. Preverite napravo, nato uporabite Prekliči na pravilu (ali dejanje house_rules.cancel) za nov poskus."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} ni bilo mogoče nadaljevati",
+      "description": "Naprava je bila med istim programom preveliko krat ponovno vklopljena: pravilo je nehalo poskušati. Preverite napravo, nato uporabite Prekliči na pravilu za nov poskus."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Preizkusi pravilo",
+      "description": "Enkrat izvede dejanje enega ali več pravil.",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID-ji pravil."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Začasno ustavi",
+      "description": "Za nekaj časa ustavi eno ali več pravil (0 ali prazno: nadaljuj zdaj).",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID-ji pravil."
+        },
+        "minutes": {
+          "name": "Minute",
+          "description": "Kako dolgo."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Prekliči",
+      "description": "Ustavi, kar pravilo počne (alarm, časovniki), ali pozabi njegove napake.",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID-ji pravil."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Potrdi",
+      "description": "Konča alarme (vse, če pravilo ni podano).",
+      "fields": {
+        "rule": {
+          "name": "Pravila",
+          "description": "ID-ji pravil."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Podaljšaj časovnik",
+      "description": "Doda minute časovniku izklopa entitet.",
+      "fields": {
+        "entity_id": {
+          "name": "Entitete",
+          "description": "Entitete z delujočim časovnikom."
+        },
+        "minutes": {
+          "name": "Minute",
+          "description": "Minute za dodati (negativno: odvzeti)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Ponovno naloži",
+      "description": "Ponovno prebere house_rules.yaml (datoteka je tudi nadzorovana)."
+    },
+    "export_yaml": {
+      "name": "Izvozi kot YAML",
+      "description": "Vrne celotno konfiguracijo kot YAML."
+    }
+  }
+}

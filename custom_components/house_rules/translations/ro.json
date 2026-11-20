@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "House Rules",
+        "description": "Regulile, camerele și setările se editează în panoul House Rules sau în house_rules.yaml (în ambele sensuri)."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "House Rules este deja configurat."
+    }
+  },
+  "entity": {
+    "switch": {
+      "rule_enabled": {
+        "name": "Activată"
+      },
+      "vacation": {
+        "name": "Mod vacanță"
+      }
+    },
+    "sensor": {
+      "rule": {
+        "name": "Stare",
+        "state": {
+          "disabled": "Dezactivată",
+          "snoozed": "În pauză",
+          "idle": "Inactivă",
+          "armed": "Armată",
+          "active": "Activă",
+          "alert": "Alertă",
+          "waiting": "În așteptare",
+          "failed": "Eșuată"
+        }
+      },
+      "alerts": {
+        "name": "Alerte active"
+      },
+      "timers": {
+        "name": "Cronometre active"
+      }
+    },
+    "button": {
+      "test": {
+        "name": "Testează"
+      },
+      "acknowledge": {
+        "name": "Confirmă alertele"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "House Rules nu este încărcat."
+    },
+    "unknown_rule": {
+      "message": "Regulă necunoscută: {rule}."
+    }
+  },
+  "issues": {
+    "yaml_error": {
+      "title": "house_rules.yaml nu este valid",
+      "description": "{file}, linia {line}: {error}\n\nUltima configurație validă continuă să ruleze. Editarea în panou este în pauză până la corectarea fișierului."
+    },
+    "invalid_rules": {
+      "title": "Unele reguli House Rules nu sunt valide",
+      "description": "Aceste reguli nu au fost încărcate: {rules}"
+    },
+    "keep_on_failed": {
+      "title": "{rule}: {entity} se tot oprește",
+      "description": "{entity} a fost repornit de prea multe ori la rând: regula a încetat să încerce. Verifică dispozitivul, apoi folosește Anulează pe regulă (sau acțiunea house_rules.cancel) pentru a încerca din nou."
+    },
+    "resume_failed": {
+      "title": "{rule}: {entity} nu a putut fi reluat",
+      "description": "Aparatul a fost repornit de prea multe ori în timpul aceluiași program: regula a încetat să încerce. Verifică aparatul, apoi folosește Anulează pe regulă pentru a încerca din nou."
+    }
+  },
+  "services": {
+    "trigger": {
+      "name": "Testează o regulă",
+      "description": "Execută o dată acțiunea uneia sau mai multor reguli.",
+      "fields": {
+        "rule": {
+          "name": "Reguli",
+          "description": "Identificatorii regulilor."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Pune în pauză",
+      "description": "Pune în pauză una sau mai multe reguli pentru un timp (0 sau gol: reia acum).",
+      "fields": {
+        "rule": {
+          "name": "Reguli",
+          "description": "Identificatorii regulilor."
+        },
+        "minutes": {
+          "name": "Minute",
+          "description": "Cât timp."
+        }
+      }
+    },
+    "cancel": {
+      "name": "Anulează",
+      "description": "Oprește ce face o regulă (alertă, cronometre) sau îi uită eșecurile.",
+      "fields": {
+        "rule": {
+          "name": "Reguli",
+          "description": "Identificatorii regulilor."
+        }
+      }
+    },
+    "acknowledge": {
+      "name": "Confirmă",
+      "description": "Încheie alertele (toate, dacă nu este dată nicio regulă).",
+      "fields": {
+        "rule": {
+          "name": "Reguli",
+          "description": "Identificatorii regulilor."
+        }
+      }
+    },
+    "extend_timer": {
+      "name": "Prelungește cronometrul",
+      "description": "Adaugă minute la cronometrul de oprire al entităților.",
+      "fields": {
+        "entity_id": {
+          "name": "Entități",
+          "description": "Entități cu un cronometru activ."
+        },
+        "minutes": {
+          "name": "Minute",
+          "description": "Minute de adăugat (negativ: de scăzut)."
+        }
+      }
+    },
+    "reload": {
+      "name": "Reîncarcă",
+      "description": "Recitește house_rules.yaml (fișierul este și supravegheat)."
+    },
+    "export_yaml": {
+      "name": "Exportă în YAML",
+      "description": "Returnează întreaga configurație în YAML."
+    }
+  }
+}

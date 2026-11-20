@@ -494,8 +494,28 @@ The integration follows the language of Home Assistant. Currently supported:
 |---|---|
 | English | `en` |
 | Français | `fr` |
+| Deutsch | `de` |
+| Español | `es` |
+| Italiano | `it` |
+| Nederlands | `nl` |
+| Português | `pt`, `pt-BR` |
+| Polski | `pl` |
+| Српски | `sr` |
+| Srpski (latinica) | `sr-Latn` |
+| Română | `ro` |
+| Dansk | `da` |
+| Svenska | `sv` |
+| Български | `bg` |
+| Русский | `ru` |
+| Українська | `uk` |
+| Magyar | `hu` |
+| Slovenčina | `sk` |
+| Čeština | `cs` |
+| Slovenščina | `sl` |
+| Latviešu | `lv` |
+| Ελληνικά | `el` |
 
-Contributions for additional languages are welcome!
+The integration (config flow, entities, actions, repairs), the panel and the cards are translated in every language above. Corrections and new languages are welcome!
 
 ## License
 
