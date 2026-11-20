@@ -46,9 +46,9 @@ The configuration lives in **`/config/house_rules.yaml`, edited both ways**: in 
 |---|---|
 | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rule-edit.png" alt="Editing a rule as YAML from the Rules tab" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rule-edit-dark.png" alt="Editing a rule as YAML from the Rules tab, dark mode" width="700"> |
 
-| Rooms tab: lights, openings, air conditioners, presence and light level | Dark mode |
+| Rooms tab: a folding card per room, its sections and the rules that use it | Dark mode |
 |---|---|
-| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rooms.png" alt="Rooms tab: lights, openings, air conditioners, presence and light level" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rooms-dark.png" alt="Rooms tab: lights, openings, air conditioners, presence and light level, dark mode" width="700"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rooms.png" alt="Rooms tab: a folding card per room, its sections and the rules that use it" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rooms-dark.png" alt="Rooms tab: a folding card per room, its sections and the rules that use it, dark mode" width="700"> |
 
 | Journal tab: what the rules did, by day | Dark mode |
 |---|---|
@@ -123,7 +123,7 @@ The cards are added to the dashboard resources automatically (`/house_rules_stat
 |---|---|
 | Activity | Alerts in progress (acknowledge, snooze), running timers (+15 min, turn off), every rule's state, the latest runs |
 | Rules | Rules by type, filter chips, enable switch, Test, the YAML editor of a rule (as written in the file, comments included), a banner when the file was reloaded |
-| Rooms | The rooms table used by the vacuum and presence rules: light, opening, air conditioner, presence, illuminance |
+| Rooms | As on Smart Comfort: a folding card per room — its live state (someone there, nap, an opening open, an entity unavailable) and the rules that use it in its header; inside, its name and Home Assistant area, then its sections (lights, windows and doors, presence and light level, devices, naps) with Home Assistant's entity pickers, the empty ones offered as **+** chips. **Discover** finds the rooms of the Home Assistant areas with their lights, openings, presence and light level sensors (a room keeps what it has; nothing is saved before **Save**); the areas without a room are offered at the end |
 | Journal | Every run, by day, filterable and searchable |
 | YAML | The whole `house_rules.yaml`, as written, editable: saving checks the YAML and every rule first, keeps a `.bak`, refuses a file changed meanwhile and restarts only the changed rules. Without the file: the stored configuration as YAML (read only, copy) |
 | Settings | Configuration source (YAML / storage, reload, switch to YAML), global conditions, notification target, import |
@@ -164,7 +164,7 @@ rules: !include_dir_merge_list house_rules/
 
 #### Rooms
 
-Room names are the ones the vacuum's current-room sensor reports (for `vacuum_follow` / `vacuum_guard`) and the ones `presence_light` refers to. The panel's **Rooms** tab edits this table.
+Room names are the ones the vacuum's current-room sensor reports (for `vacuum_follow` / `vacuum_guard`) and the ones `presence_light` refers to. The panel's **Rooms** tab edits them, a folding card per room.
 
 | Option | Description |
 |---|---|
@@ -173,7 +173,8 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `climate` | Air conditioner of the room: while it runs, `vacuum_guard` lets the robot clean with the opening open |
 | `presence` | Presence/occupancy `binary_sensor`(s) (`presence_light`): someone is there while one of them is on |
 | `illuminance` | Light level sensor (`dark_below` of `vacuum_follow` / `presence_light`) |
-| `naps` | Naps of the room: slots (`start`, `end` and optionally `days`, `mon` … `sun`, every day when none) and/or on/off entities (a nap while one is on: a `schedule` helper, an `input_boolean`…). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: `13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom` |
+| `naps` | Naps of the room: slots (`start`, `end` and optionally `days`, `mon` … `sun`, every day when none) and/or on/off entities (a nap while one is on: a `schedule` helper, an `input_boolean`…). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: room → Naps, **+ Nap** (from, until, days) or **+ Nap schedule** (an entity) |
+| `area` | The room's Home Assistant area: the Rooms tab's **Discover** fills the room from it |
 
 ##### Naps shared with other integrations
 

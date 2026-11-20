@@ -275,6 +275,8 @@ ROOM = vol.Schema(
         vol.Optional("presence"): vol.Any(cv.entity_id, ENTITIES),
         vol.Optional("illuminance"): cv.entity_id,
         vol.Optional("naps", default=list): vol.All(cv.ensure_list, [NAP]),
+        # The Home Assistant area of the room (the Rooms tab finds its entities there).
+        vol.Optional("area"): cv.string,
     },
     extra=vol.ALLOW_EXTRA,
 )

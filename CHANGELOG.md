@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0 - 2026-11-20
+
+### Features
+- **Rooms tab, as on Smart Comfort**: a folding card per room instead of a table of entity ids.
+  - Its header: the room's area icon, its live state (someone there, a nap, an opening open, entities unavailable),
+    what it holds and how many rules use it; move up / down and remove.
+  - Inside: its name and Home Assistant area, the rules that use it (each opens its editor), then its sections —
+    lights, windows and doors, presence and light level, devices, naps — with Home Assistant's entity pickers; the
+    empty sections are offered as **+** chips. Naps: from / until and day buttons, or a nap schedule entity.
+  - **Discover** fills the rooms from the Home Assistant areas (lights, openings, presence and light level sensors,
+    air conditioner); a room keeps what it has and nothing is saved before **Save**. The areas without a room are
+    offered at the end of the list.
+- Rooms: a new optional `area` key, the room's Home Assistant area.
+
 ## 1.3.2 - 2026-11-20
 
 ### Fixes
