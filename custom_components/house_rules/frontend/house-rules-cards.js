@@ -1273,6 +1273,7 @@ const HR_FAMILY = {
   appliance: ['appliance_resume', 'cycle_done'],
   drop: ['leak_guard'],
 };
+const HR_SCENE_MAX = 4;
 const HR_COLOR = { red: '#EF4444', amber: '#F59E0B', blue: '#3B82F6', green: '#16A34A', grey: '#9AA3B1' };
 
 function hrFamilyTone(rules, family) {
@@ -1305,11 +1306,21 @@ function hrScene(rules, night) {
       `<g class="${t === 'red' ? 'hr-blink' : ''}"><path d="M12,52 s10,11 10,19 a10,10 0 0 1 -20,0 c0,-8 10,-19 10,-19z" fill="${fill}" stroke="${c}" stroke-width="1.5"/></g>`,
   };
   const width = { plug: 26, lamp: 28, robot: 36, lock: 22, bell: 26, appliance: 30, drop: 24 };
+  // At most HR_SCENE_MAX objects, so the scene never runs under the title: the most urgent families (red first, then
+  // amber, blue, green, grey; ties in the usual order), drawn in the usual order so an object keeps its place.
+  const families = Object.keys(HR_FAMILY);
+  const tones = Object.fromEntries(families.map((f) => [f, hrFamilyTone(rules, f)]));
+  const shown = new Set(
+    families
+      .filter((f) => tones[f] !== null)
+      .sort((a, b) => HR_TONE_RANK[tones[b]] - HR_TONE_RANK[tones[a]] || families.indexOf(a) - families.indexOf(b))
+      .slice(0, HR_SCENE_MAX),
+  );
   let x = 0;
   let svg = '';
-  for (const family of Object.keys(HR_FAMILY)) {
-    const tone = hrFamilyTone(rules, family);
-    if (tone === null) continue;
+  for (const family of families) {
+    if (!shown.has(family)) continue;
+    const tone = tones[family];
     svg += `<g transform="translate(${x},0)">${draw[family](HR_COLOR[tone], tone)}</g>`;
     x += width[family] + 22;
   }

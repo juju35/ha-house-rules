@@ -62,6 +62,29 @@ test('the scene draws one object per configured family, coloured by the worst st
   assert.ok(svg.includes('hr-blink')); // drop: alert blinks
 });
 
+test('the scene shows at most four families, the most urgent first, in their usual order', () => {
+  const svg = S.scene(
+    [
+      { type: 'keep_on', state: 'armed' },
+      { type: 'presence_light', state: 'idle' },
+      { type: 'vacuum_follow', state: 'active' },
+      { type: 'lock_guard', state: 'armed' },
+      { type: 'sensor_chime', state: 'armed' },
+      { type: 'cycle_done', state: 'waiting' },
+      { type: 'leak_guard', state: 'alert' },
+    ],
+    false,
+  );
+  assert.equal((svg.match(/<g transform/g) || []).length, 4);
+  // drop (red), robot (amber), appliance (blue), then the first green family in the usual order: the plug
+  assert.ok(svg.includes('hr-blink'));
+  assert.ok(svg.includes('hr-roll'));
+  assert.ok(svg.indexOf('<rect x="0" y="50" width="26"') < svg.indexOf('hr-roll')); // plug drawn before the robot
+  assert.ok(!svg.includes('M5,58 v-6')); // no lock
+  assert.ok(!svg.includes('M2,72 a10,10')); // no bell
+  assert.ok(!svg.includes('M2,48 h24')); // no lamp
+});
+
 test('a card redraws on its data, theme or language — not at every hass update', () => {
   const card = new defined['house-rules-card']();
   card.setConfig({});

@@ -7,6 +7,10 @@
   (and Brazilian Portuguese for the integration), Polish, Serbian (Cyrillic and Latin), Romanian, Danish, Swedish,
   Bulgarian, Russian, Ukrainian, Hungarian, Slovak, Czech, Slovenian, Latvian and Greek.
 
+### Fixes
+- Illustrated header (cards and panel): at most four objects, the most urgent families first (an alert is always
+  shown), so the scene no longer runs under the title, the status or the panel's buttons when many rule types are set.
+
 ## 1.0.1 - 2026-11-20
 
 ### Fixes

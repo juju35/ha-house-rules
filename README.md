@@ -391,7 +391,7 @@ Pick what to import: the rules are added, the rooms merged (existing rooms kept)
 
 ### Cards
 
-All cards share the illustrated header: one object per rule family on the ground bar (plug, lamp, robot, lock, bell, appliance, drop), coloured by the worst state of the family and animated (alert blinking, robot moving, lamp glowing); the night look follows a dark theme, or `illustration_theme`.
+All cards share the illustrated header: one object per rule family on the ground bar (plug, lamp, robot, lock, bell, appliance, drop), coloured by the worst state of the family and animated (alert blinking, robot moving, lamp glowing). At most four objects are drawn: the most urgent families first (an alert always shows), in their usual order; the night look follows a dark theme, or `illustration_theme`.
 
 #### Overview (`custom:house-rules-card`)
 
