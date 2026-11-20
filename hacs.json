@@ -1,0 +1,8 @@
+{
+  "name": "House Rules",
+  "content_in_root": false,
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "house_rules.zip",
+  "homeassistant": "2024.12.0"
+}

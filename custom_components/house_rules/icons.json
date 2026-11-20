@@ -1,0 +1,36 @@
+{
+  "entity": {
+    "switch": {
+      "rule_enabled": { "default": "mdi:toggle-switch-outline", "state": { "on": "mdi:toggle-switch", "off": "mdi:toggle-switch-off-outline" } },
+      "vacation": { "default": "mdi:island" }
+    },
+    "sensor": {
+      "rule": {
+        "default": "mdi:home-lightning-bolt-outline",
+        "state": {
+          "disabled": "mdi:cancel",
+          "snoozed": "mdi:sleep",
+          "alert": "mdi:alarm-light",
+          "failed": "mdi:alert-circle-outline",
+          "active": "mdi:play-circle-outline",
+          "waiting": "mdi:timer-sand"
+        }
+      },
+      "alerts": { "default": "mdi:alarm-light-outline" },
+      "timers": { "default": "mdi:timer-outline" }
+    },
+    "button": {
+      "test": { "default": "mdi:play" },
+      "acknowledge": { "default": "mdi:check-circle-outline" }
+    }
+  },
+  "services": {
+    "trigger": { "service": "mdi:play" },
+    "snooze": { "service": "mdi:sleep" },
+    "cancel": { "service": "mdi:stop-circle-outline" },
+    "acknowledge": { "service": "mdi:check-circle-outline" },
+    "extend_timer": { "service": "mdi:timer-plus-outline" },
+    "reload": { "service": "mdi:reload" },
+    "export_yaml": { "service": "mdi:file-code-outline" }
+  }
+}

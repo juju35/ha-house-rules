@@ -1,0 +1,49 @@
+trigger:
+  fields:
+    rule:
+      required: true
+      selector:
+        text:
+          multiple: true
+snooze:
+  fields:
+    rule:
+      required: true
+      selector:
+        text:
+          multiple: true
+    minutes:
+      selector:
+        number:
+          min: 0
+          max: 10080
+          unit_of_measurement: min
+cancel:
+  fields:
+    rule:
+      required: true
+      selector:
+        text:
+          multiple: true
+acknowledge:
+  fields:
+    rule:
+      selector:
+        text:
+          multiple: true
+extend_timer:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          multiple: true
+    minutes:
+      default: 15
+      selector:
+        number:
+          min: -1440
+          max: 1440
+          unit_of_measurement: min
+reload:
+export_yaml:
