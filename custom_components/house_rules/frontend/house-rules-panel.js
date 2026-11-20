@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.0.0';
+const HOUSE_RULES_PANEL_VERSION = '1.0.1';
 
 const HRP_STRINGS = {
   en: {
@@ -691,7 +691,8 @@ class HouseRulesPanel extends HTMLElement {
       this._ui.proposals[Number(el.dataset.prop)].checked = el.checked;
       this._render();
     });
-    on('#qh-start, #qh-end, #set-alarm, #set-notify, #set-repairs', 'change', () => this.settingsInput());
+    on('#qh-start, #qh-end, #set-alarm, #set-notify', 'input', () => this.settingsInput(false));
+    on('#qh-start, #qh-end, #set-alarm, #set-notify, #set-repairs', 'change', () => this.settingsInput(true));
     on('[data-action]', 'click', (el, ev) => {
       if (el.tagName === 'INPUT') return;
       ev.preventDefault();
@@ -888,7 +889,7 @@ class HouseRulesPanel extends HTMLElement {
     return out;
   }
 
-  settingsInput() {
+  settingsInput(render) {
     const r = this.shadowRoot;
     const s = this._ui.settings;
     const start = r.getElementById('qh-start').value;
@@ -897,11 +898,17 @@ class HouseRulesPanel extends HTMLElement {
     s.alarm = r.getElementById('set-alarm').value.trim() || null;
     s.notify = r.getElementById('set-notify').value.trim() || null;
     s.repairs = r.getElementById('set-repairs').checked;
-    this._render();
+    // Typing only updates the draft (a redraw would drop the caret); the buttons appear once it differs.
+    const shown = Boolean(r.querySelector('[data-action="save-settings"]'));
+    const dirty = JSON.stringify(s) !== JSON.stringify(this._data.settings || {});
+    if (render || shown !== dirty) this._render();
   }
 
   cleanSettings() {
-    return Object.fromEntries(Object.entries(this._ui.settings || {}).filter(([, v]) => v !== null && v !== ''));
+    // quiet_hours: null is kept (no quiet hours); other empty values go (their default applies).
+    return Object.fromEntries(
+      Object.entries(this._ui.settings || {}).filter(([k, v]) => k === 'quiet_hours' || (v !== null && v !== '')),
+    );
   }
 }
 
@@ -916,7 +923,7 @@ const HRP_CSS = `
   .menu { display: none; }
   @media (max-width: 870px) { .menu { display: inline-flex; } .hdrc .row { margin-right: 0; } .hdr .hr-scene { opacity: .35; } }
   .tabs { display: flex; flex-wrap: wrap; padding: 0 24px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
-  .tab { padding: 12px 4px; margin-right: 24px; font: 600 14px inherit; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
+  .tab { padding: 12px 4px; margin-right: 24px; font-family: inherit; font-weight: 600; font-size: 14px; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
   .tab.on { color: var(--primary-text-color); font-weight: 700; border-bottom-color: var(--primary-color); }
   main { max-width: 1232px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
   h2 { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); margin: 0 0 8px; }
@@ -950,7 +957,7 @@ const HRP_CSS = `
   .badge { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px var(--hr-tile); }
   .pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); font: 600 13px inherit; cursor: pointer; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); font-family: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
   .btn:hover { background: color-mix(in srgb, var(--primary-text-color) 6%, transparent); }
   .btn.sm { min-height: 32px; }
   .btn.red { border-color: var(--hr-red); color: var(--hr-red); }
@@ -964,7 +971,7 @@ const HRP_CSS = `
   .note.red { background: var(--hr-red-bg); color: var(--hr-red); }
   .note ha-icon { --mdc-icon-size: 16px; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { height: 32px; border: 0; border-radius: 16px; padding: 0 12px; cursor: pointer; font: 600 13px inherit; background: var(--card-background-color); color: var(--primary-text-color); box-shadow: inset 0 0 0 1px var(--divider-color); }
+  .chip { height: 32px; border: 0; border-radius: 16px; padding: 0 12px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 13px; background: var(--card-background-color); color: var(--primary-text-color); box-shadow: inset 0 0 0 1px var(--divider-color); }
   .chip.on { background: var(--primary-color); color: var(--text-primary-color, #fff); box-shadow: none; }
   .sw { position: relative; display: inline-block; width: 40px; height: 24px; flex: none; }
   .sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
@@ -973,7 +980,7 @@ const HRP_CSS = `
   .sw input:checked + span { background: var(--primary-color); }
   .sw input:checked + span::after { left: 19px; }
   .field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: var(--secondary-text-color); }
-  textarea, select, .cell { font: 13px/20px var(--code-font-family, ui-monospace, SFMono-Regular, Menlo, monospace); color: var(--primary-text-color); background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 10px; padding: 8px 10px; box-sizing: border-box; }
+  textarea, select, .cell { font-size: 13px; line-height: 20px; font-family: var(--code-font-family, ui-monospace, SFMono-Regular, Menlo, monospace); color: var(--primary-text-color); background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 10px; padding: 8px 10px; box-sizing: border-box; }
   select, .cell { font-family: inherit; height: 38px; padding: 0 10px; }
   .cell.name { font-weight: 700; }
   textarea { min-height: 320px; resize: vertical; width: 100%; tab-size: 2; }
@@ -986,7 +993,7 @@ const HRP_CSS = `
   .when { font-size: 12px; color: var(--secondary-text-color); width: 44px; white-space: nowrap; font-variant-numeric: tabular-nums; }
   ul { list-style: none; margin: 0; padding: 0; }
   li { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--divider-color); }
-  .link { background: none; border: 0; color: var(--primary-color); font: 600 13px inherit; padding: 12px 0; cursor: pointer; }
+  .link { background: none; border: 0; color: var(--primary-color); font-family: inherit; font-weight: 600; font-size: 13px; padding: 12px 0; cursor: pointer; }
   .ringlabel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
   .srow { display: flex; gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--divider-color); flex-wrap: wrap; }
   .srcbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: var(--hr-tile); }

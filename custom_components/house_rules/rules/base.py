@@ -19,7 +19,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.util import dt as dt_util
 
-from ..const import ST_ARMED, ST_DISABLED, ST_SNOOZED
+from ..const import DOMAIN, ST_ARMED, ST_DISABLED, ST_SNOOZED
 
 if TYPE_CHECKING:
     from ..manager import HouseRules
@@ -156,7 +156,9 @@ class Rule:
         return (st.attributes.get("friendly_name") if st else None) or (entity or "")
 
     async def notify(self, title: str | None, message: str, critical: bool = False) -> bool:
-        return await self.manager.notify(self.cfg.get("notify"), title or self.name, message, critical)
+        return await self.manager.notify(
+            self.cfg.get("notify"), title or self.name, message, critical, tag=f"{DOMAIN}_{self.id}"
+        )
 
     # ---------- what the rule shows ----------
     def current_state(self) -> str:

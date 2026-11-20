@@ -58,6 +58,15 @@ def setup_rule_entities(hass, entry, async_add_entities, factory, global_entitie
 
     @callback
     def sync() -> None:
+        from homeassistant.helpers import device_registry as dr
+
+        devices = dr.async_get(hass)
+        # The entry's own devices (works on every supported version, no identifier lookup across entries).
+        for device in dr.async_entries_for_config_entry(devices, entry.entry_id):
+            rid = next((i[1][5:] for i in device.identifiers if i[0] == DOMAIN and i[1].startswith("rule_")), None)
+            rule = manager.rules.get(rid) if rid else None
+            if rule and (device.name != rule.name or device.model != rule.type):
+                devices.async_update_device(device.id, name=rule.name, model=rule.type)
         new = []
         for rid in manager.rules:
             if rid not in known:

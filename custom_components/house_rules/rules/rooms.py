@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from typing import Any
 
@@ -51,6 +52,8 @@ class VacuumFollow(Rule):
         super().__init__(*args)
         self.room: str | None = None
         self.lit: list[str] = []
+        # Room changes in quick succession: one move at a time.
+        self._lock = asyncio.Lock()
 
     async def async_start(self) -> None:
         self.track([self.cfg["room_sensor"], self.cfg["vacuum"]], self._on_change)
@@ -81,6 +84,10 @@ class VacuumFollow(Rule):
             self.hass.async_create_task(self._move(new.state))
 
     async def _move(self, room_name: str | None) -> None:
+        async with self._lock:
+            await self._move_locked(room_name)
+
+    async def _move_locked(self, room_name: str | None) -> None:
         transition = self.cfg["transition"]
         found = find_room(self.manager.rooms, room_name)
         wanted: list[str] = []
@@ -174,6 +181,7 @@ class PresenceLight(Rule):
 
     async def async_start(self) -> None:
         self.track([self.room.get("presence")], self._on_change)
+        self.track([self.room.get("illuminance")], self._on_light_level)
 
     async def async_stop(self) -> None:
         if self.lit:
@@ -213,6 +221,13 @@ class PresenceLight(Rule):
         elif new.state == "off" and self.lit:
             self.cancel_later(self._off)
             self._off = self.later(self.cfg["off_delay"].total_seconds(), self._release)
+
+    @callback
+    def _on_light_level(self, _event: Event) -> None:
+        """It got dark while someone is in the room."""
+        presence = self.room.get("presence")
+        if not self.lit and self.value(presence) == "on" and self.active() and self.dark() and self.in_windows():
+            self.hass.async_create_task(self._on())
 
     async def _on(self) -> None:
         self.lit = True

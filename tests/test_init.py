@@ -156,3 +156,49 @@ async def test_yaml_tab_get_and_save(hass: HomeAssistant, hass_ws_client):
     )
     assert (await client.receive_json())["error"]["code"] == "invalid"
     assert "switch.b" in Path(hass.config.path("house_rules.yaml")).read_text(encoding="utf-8")
+
+
+async def test_import_apply(hass: HomeAssistant, hass_ws_client):
+    entry = await _setup(hass, "rooms:\n  Kitchen: {light: light.kitchen_main}\nrules: []\n")
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "house_rules/import/apply",
+            "rules": [{"id": "follow", "type": "vacuum_follow", "vacuum": "vacuum.r", "room_sensor": "sensor.r"}],
+            "rooms": {"Kitchen": {"light": "light.kitchen"}, "Hall": {"light": "light.hall"}},
+            "automations": [],
+        }
+    )
+    assert (await client.receive_json())["success"]
+    manager = entry.runtime_data
+    assert "follow" in manager.rules
+    assert manager.raw["rooms"]["Kitchen"]["light"] == "light.kitchen_main"  # existing room kept
+    assert manager.raw["rooms"]["Hall"]["light"] == "light.hall"
+
+
+async def test_actions_need_admin_except_acknowledge(hass: HomeAssistant, hass_ws_client, hass_read_only_access_token):
+    await _setup(hass, "rules:\n  - id: a\n    type: keep_on\n    entity_id: switch.a\n")
+    client = await hass_ws_client(hass, hass_read_only_access_token)
+    await client.send_json({"id": 1, "type": "house_rules/action", "rule": "a", "action": "snooze", "minutes": 5})
+    assert (await client.receive_json())["error"]["code"] == "unauthorized"
+    await client.send_json({"id": 2, "type": "house_rules/action", "rule": "a", "action": "acknowledge"})
+    assert (await client.receive_json())["success"]
+
+
+async def test_rule_device_follows_rename(hass: HomeAssistant):
+    from homeassistant.helpers import device_registry as dr
+
+    entry = await _setup(hass, "rules:\n  - id: a\n    type: keep_on\n    entity_id: switch.a\n")
+    await entry.runtime_data.async_save_rule({"id": "a", "name": "Box", "type": "keep_on", "entity_id": "switch.a"})
+    await hass.async_block_till_done()
+    devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert "Box" in [d.name for d in devices]
+
+
+async def test_quiet_hours_can_be_cleared(hass: HomeAssistant):
+    entry = await _setup(hass, 'settings:\n  quiet_hours: {start: "00:00", end: "23:59"}\nrules: []\n')
+    manager = entry.runtime_data
+    await manager.async_save_section("settings", {"quiet_hours": None})
+    assert manager.settings["quiet_hours"] is None
+    assert not manager.quiet()

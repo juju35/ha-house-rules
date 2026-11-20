@@ -200,7 +200,12 @@ class AutoOff(Rule):
 
     def timers(self) -> list[dict[str, Any]]:
         out = []
-        for entity, since in self._timers().items():
+        targets = set(self.targets())
+        for entity, since in list(self._timers().items()):
+            if entity not in targets:
+                # Left the rule (label removed, entity_id changed): its timer goes.
+                self._timers().pop(entity, None)
+                continue
             seconds = self.duration(entity)
             if seconds is None or self.value(entity) != "on":
                 continue

@@ -341,13 +341,16 @@ class HouseRules:
             return False
         return True
 
-    async def notify(self, target: str | None, title: str, message: str, critical: bool = False) -> bool:
+    async def notify(
+        self, target: str | None, title: str, message: str, critical: bool = False, tag: str | None = None
+    ) -> bool:
         target = target or self.settings.get("notify")
         if not target:
             return False
         service = target.removeprefix("notify.")
         data: dict[str, Any] = {"title": title, "message": message}
-        extra: dict[str, Any] = {"url": f"/{DOMAIN.replace('_', '-')}/activity", "tag": f"{DOMAIN}_{service}"}
+        # One tag per rule: a rule's next notification replaces its previous one, never another rule's.
+        extra: dict[str, Any] = {"url": f"/{DOMAIN.replace('_', '-')}/activity", "tag": tag or DOMAIN}
         if critical:
             extra["push"] = {"interruption-level": "critical", "sound": {"name": "default", "critical": 1, "volume": 1}}
         data["data"] = extra

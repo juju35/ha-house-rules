@@ -115,3 +115,15 @@ def test_create_and_dump(tmp_path: Path):
     loaded = src.load()
     assert loaded.data["rooms"]["Hall"]["light"] == "light.hall"
     assert "id: a" in dump(loaded.data)
+
+
+def test_new_file_in_included_folder_is_seen(tmp_path: Path):
+    folder = tmp_path / "house_rules"
+    folder.mkdir()
+    (folder / "a.yaml").write_text("- id: a\n  type: keep_on\n  entity_id: switch.a\n", encoding="utf-8")
+    (tmp_path / "house_rules.yaml").write_text("rules: !include_dir_merge_list house_rules\n", encoding="utf-8")
+    src = YamlSource(tmp_path / "house_rules.yaml")
+    src.load()
+    assert not src.changed()
+    (folder / "b.yaml").write_text("- id: b\n  type: keep_on\n  entity_id: switch.b\n", encoding="utf-8")
+    assert src.changed()

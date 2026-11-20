@@ -20,7 +20,7 @@ class ApplianceResume(Rule):
     type = APPLIANCE_RESUME
 
     async def async_start(self) -> None:
-        self.track([self.cfg.get("progress"), self.cfg["switch"]], self._on_change)
+        self.track([self.cfg.get("progress")], self._on_change)
         if at := self.cfg.get("power_on_at"):
             self._unsubs.append(
                 async_track_time_change(self.hass, self._scheduled, hour=at.hour, minute=at.minute, second=at.second)
@@ -34,15 +34,13 @@ class ApplianceResume(Rule):
         old, new = changed(event)
         if new is None:
             return
-        if new.entity_id == self.cfg.get("progress"):
-            value = self.number(new.entity_id)
-            if value is not None:
-                self.data["last_progress"] = value
-                if value >= 100 or value <= 0:
-                    self.data["attempts"] = 0
-            cut = new.state in UNAVAILABLE and old is not None and old.state not in UNAVAILABLE
-        else:
-            cut = new.state == "off" and old is not None and old.state == "on"
+        # Only a power cut (the progress goes unavailable): a switch turned off by hand cancels the programme.
+        value = self.number(new.entity_id)
+        if value is not None:
+            self.data["last_progress"] = value
+            if value >= 100 or value <= 0:
+                self.data["attempts"] = 0
+        cut = new.state in UNAVAILABLE and old is not None and old.state not in UNAVAILABLE
         last = self.data.get("last_progress")
         if cut and last is not None and 0 < last < 100:
             self.later(self.cfg["delay"].total_seconds(), self._resume)
@@ -123,6 +121,10 @@ class CycleDone(Rule):
 
     async def async_start(self) -> None:
         self.track([self.cfg.get("power_entity"), self.cfg.get("state_entity"), self.cfg.get("door")], self._on_change)
+        # Restarted during a cycle: the power may already be low and never change again.
+        watts = self.number(self.cfg.get("power_entity"))
+        if self.phase == "running" and watts is not None and watts < self.cfg["done_below"]:
+            self._below = self.later(self.cfg["done_for"].total_seconds(), self._power_done)
 
     @property
     def phase(self) -> str:
