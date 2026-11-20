@@ -7,6 +7,9 @@
   as `"false"` in Smart Comfort's config entry) is imported as kept off, instead of turning the light on.
 - Imported rule ids fold the accents: `presence_entree` for the Entrée, no longer `presence_entr_e` (ids already
   imported stay as they are).
+- `presence_light`: a nap that starts while the lights are on turns off those kept off during the naps
+  (`not_during_naps`) — at once for a nap entity, within a minute for a nap slot. They used to stay on until the room
+  was empty.
 
 ## 1.3.1 - 2026-11-20
 

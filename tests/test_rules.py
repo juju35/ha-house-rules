@@ -742,3 +742,29 @@ def test_slot_needs_hours_or_naps():
     assert SLOT({"during_naps": True, "brightness": 40})["during_naps"] is True
     with pytest.raises(vol.Invalid):
         SLOT({"brightness": 40})
+
+
+async def test_presence_light_nap_starts(hass: HomeAssistant, calls):
+    # Lit before the nap: a nap that starts turns the lights kept off during the naps off, not the others.
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("schedule.nap_bedroom", "off")
+    for light in ("light.hallway", "light.night"):
+        hass.states.async_set(light, "off")
+    await setup(
+        hass,
+        """
+rooms:
+  Bedroom: {naps: [schedule.nap_bedroom]}
+  Hallway: {lights: [light.hallway, light.night], presence: binary_sensor.presence}
+rules:
+  - {id: hallway, type: presence_light, room: Hallway, not_during_naps: [light.hallway]}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert sorted(c.data["entity_id"] for c in calls["light.turn_on"]) == ["light.hallway", "light.night"]
+    for light in ("light.hallway", "light.night"):
+        hass.states.async_set(light, "on")
+    hass.states.async_set("schedule.nap_bedroom", "on")
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in calls["light.turn_off"]] == ["light.hallway"]

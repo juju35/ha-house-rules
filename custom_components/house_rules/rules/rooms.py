@@ -13,6 +13,8 @@ from homeassistant.util import dt as dt_util
 from ..const import PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD, WEEKDAYS
 from .base import UNAVAILABLE, Rule, changed
 
+NAP_CHECK = 60  # Seconds between two checks for a nap slot that starts (a nap entity is followed at once).
+
 CLEANING = ("cleaning", "returning")
 
 
@@ -209,6 +211,11 @@ class PresenceLight(Rule):
         self.track(self.sensors(), self._on_change)
         self.track([self.room.get("illuminance")], self._on_light_level)
         self.track(self.lights(), self._on_light)
+        if self.cfg.get("not_during_naps"):
+            # A nap that starts turns off the lights it keeps off: a nap entity at once, a nap slot within a minute.
+            naps = [n for room in self.manager.rooms.values() for n in room.get("naps") or [] if isinstance(n, str)]
+            self.track(naps, self._on_nap)
+            self.every(NAP_CHECK, self._on_nap)
 
     async def async_stop(self) -> None:
         self._cancel_off()
@@ -357,6 +364,10 @@ class PresenceLight(Rule):
             groups.setdefault(delay.total_seconds(), []).append(light)
         for seconds, lights in groups.items():
             self._off.append(self.later(seconds, partial(self._release, lights)))
+
+    async def _on_nap(self, _event: Any) -> None:
+        if lights := sorted(self.claimed & self.nap_lights()):
+            await self._release(lights, dt_util.now())
 
     async def _release(self, lights: list[str], _now: datetime) -> None:
         params = {"transition": self.cfg["transition"]} if self.cfg.get("transition") is not None else {}
