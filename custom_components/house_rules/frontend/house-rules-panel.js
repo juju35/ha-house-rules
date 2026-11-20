@@ -2,28 +2,41 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.3.2';
+const HOUSE_RULES_PANEL_VERSION = '1.4.0';
 
-// Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom" (days optional, an on/off
-// entity such as a `schedule` helper shared with other integrations), both ways. A part that doesn't
-// read is kept as written: saving then shows the validation error.
-const hrpNapsText = (naps) =>
-  (Array.isArray(naps) ? naps : [])
-    .map((n) => typeof n === 'string' ? n : `${n.days?.length ? `${[].concat(n.days).join(',')} ` : ''}${n.end ? `${String(n.start).slice(0, 5)}-${String(n.end).slice(0, 5)}` : n.start}`)
-    .join('; ');
-const hrpNapsParse = (text) =>
-  text
-    .split(';')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      if (/^[a-z_]+\.[a-z0-9_]+$/.test(part)) return part;
-      const m = part.match(/^(?:([a-z,\s]+?)\s+)?(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/i);
-      if (!m) return { start: part, end: '' };
-      const nap = { start: m[2].padStart(5, '0'), end: m[3].padStart(5, '0') };
-      if (m[1]) nap.days = m[1].toLowerCase().split(/[\s,]+/).filter(Boolean);
-      return nap;
-    });
+// Rooms tab: the sections of a room (as on Smart Comfort's Rooms tab), the entities each field takes, the list fields.
+const HRP_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const HRP_ROOM_LISTS = ['lights', 'opening', 'presence'];
+const HRP_ROOM_FILTERS = {
+  lights: [{ domain: 'light' }],
+  opening: [{ domain: 'binary_sensor', device_class: ['door', 'window', 'opening', 'garage_door'] }],
+  presence: [{ domain: 'binary_sensor', device_class: ['occupancy', 'motion', 'presence'] }],
+  illuminance: [{ domain: 'sensor', device_class: ['illuminance'] }],
+  climate: [{ domain: 'climate' }],
+  naps: [{ domain: 'schedule' }, { domain: 'input_boolean' }, { domain: 'binary_sensor' }, { domain: 'switch' }],
+};
+const HRP_ROOM_LABELS = {
+  lights: 'rm_light',
+  opening: 'rm_opening',
+  presence: 'rm_presence_sensor',
+  illuminance: 'rm_illuminance',
+  climate: 'rm_climate',
+  naps: 'rm_nap_schedule',
+};
+const HRP_ROOM_SECTIONS = [
+  { key: 'lights', icon: 'mdi:lightbulb-outline', fields: [{ f: 'lights', list: true, label: 'rm_light' }] },
+  { key: 'openings', icon: 'mdi:window-closed-variant', fields: [{ f: 'opening', list: true, label: 'rm_opening' }] },
+  {
+    key: 'presence',
+    icon: 'mdi:motion-sensor',
+    fields: [
+      { f: 'presence', list: true, label: 'rm_presence_sensor' },
+      { f: 'illuminance', label: 'rm_illuminance' },
+    ],
+  },
+  { key: 'devices', icon: 'mdi:air-conditioner', fields: [{ f: 'climate', label: 'rm_climate' }] },
+  { key: 'naps', icon: 'mdi:weather-night', naps: true },
+];
 
 const HRP_STRINGS = {
   "en": {
@@ -78,7 +91,47 @@ const HRP_STRINGS = {
     "illuminance": "Illuminance",
     "naps": "Naps",
     "add_room": "Add a room",
-    "rooms_help": "Room names as the vacuum reports them. Used by the vacuum and presence rules.",
+    "rooms_help": "What the rules know about each room: its lights, openings, presence and naps.",
+    "rm_discover": "Discover",
+    "rm_discover_help": "Finds the rooms of your Home Assistant areas, with their lights, openings, presence and light level sensors. Nothing is saved before you check.",
+    "rm_discovered": "Rooms found or completed: check them, then save.",
+    "rm_nothing_found": "Nothing new in the areas.",
+    "rm_collapse": "Collapse all",
+    "rm_toggle": "Show or hide {name}",
+    "rm_up": "Move up",
+    "rm_down": "Move down",
+    "rm_name": "Name",
+    "rm_area": "Home Assistant area",
+    "rm_area_none": "None",
+    "rm_name_help": "The name the vacuum reports; the area finds its entities.",
+    "rm_used_by": "Used by {rules}.",
+    "rm_unused": "No rule uses it yet.",
+    "rm_rules_one": "1 rule",
+    "rm_rules_other": "{n} rules",
+    "rm_pausing_one": "its naps pause 1 rule",
+    "rm_pausing_other": "its naps pause {n} rules",
+    "rm_someone": "Someone",
+    "rm_napping": "Nap",
+    "rm_open": "{name} open",
+    "rm_unavailable_one": "1 entity unavailable",
+    "rm_unavailable_other": "{n} entities unavailable",
+    "rm_areas_unused": "Home Assistant areas without a room",
+    "rm_other_room": "Other room",
+    "rm_lights": "Lights",
+    "rm_openings": "Windows and doors",
+    "rm_presence": "Presence and light level",
+    "rm_devices": "Devices",
+    "rm_naps": "Naps",
+    "rm_light": "Light",
+    "rm_opening": "Window or door",
+    "rm_presence_sensor": "Presence sensor",
+    "rm_illuminance": "Light level sensor",
+    "rm_climate": "Air conditioner",
+    "rm_nap": "Nap",
+    "rm_nap_schedule": "Nap schedule",
+    "rm_nap_from": "From",
+    "rm_nap_to": "Until",
+    "rm_nap_days_help": "No day selected: every day.",
     "remove": "Remove",
     "today": "Today's runs",
     "search": "Search a rule or an entity",
@@ -171,7 +224,47 @@ const HRP_STRINGS = {
     "illuminance": "Luminosité",
     "naps": "Siestes",
     "add_room": "Ajouter une pièce",
-    "rooms_help": "Noms de pièces tels que l'aspirateur les expose. Utilisée par les règles aspirateur et présence.",
+    "rooms_help": "Ce que les règles savent de chaque pièce : ses lumières, ses ouvertures, sa présence et ses siestes.",
+    "rm_discover": "Découvrir",
+    "rm_discover_help": "Trouve les pièces de vos zones Home Assistant, avec leurs lumières, ouvertures, capteurs de présence et de luminosité. Rien n'est enregistré avant votre vérification.",
+    "rm_discovered": "Pièces trouvées ou complétées : vérifiez-les, puis enregistrez.",
+    "rm_nothing_found": "Rien de nouveau dans les zones.",
+    "rm_collapse": "Tout replier",
+    "rm_toggle": "Afficher ou masquer {name}",
+    "rm_up": "Monter",
+    "rm_down": "Descendre",
+    "rm_name": "Nom",
+    "rm_area": "Zone Home Assistant",
+    "rm_area_none": "Aucune",
+    "rm_name_help": "Le nom que rapporte l'aspirateur ; la zone trouve ses entités.",
+    "rm_used_by": "Utilisée par {rules}.",
+    "rm_unused": "Aucune règle ne l'utilise encore.",
+    "rm_rules_one": "1 règle",
+    "rm_rules_other": "{n} règles",
+    "rm_pausing_one": "ses siestes mettent 1 règle en pause",
+    "rm_pausing_other": "ses siestes mettent {n} règles en pause",
+    "rm_someone": "Quelqu'un",
+    "rm_napping": "Sieste",
+    "rm_open": "{name} ouverte",
+    "rm_unavailable_one": "1 entité indisponible",
+    "rm_unavailable_other": "{n} entités indisponibles",
+    "rm_areas_unused": "Zones Home Assistant sans pièce",
+    "rm_other_room": "Autre pièce",
+    "rm_lights": "Lumières",
+    "rm_openings": "Fenêtres et portes",
+    "rm_presence": "Présence et luminosité",
+    "rm_devices": "Appareils",
+    "rm_naps": "Siestes",
+    "rm_light": "Lumière",
+    "rm_opening": "Fenêtre ou porte",
+    "rm_presence_sensor": "Capteur de présence",
+    "rm_illuminance": "Capteur de luminosité",
+    "rm_climate": "Climatiseur",
+    "rm_nap": "Sieste",
+    "rm_nap_schedule": "Planning de sieste",
+    "rm_nap_from": "De",
+    "rm_nap_to": "À",
+    "rm_nap_days_help": "Aucun jour choisi : tous les jours.",
     "remove": "Retirer",
     "today": "Déclenchements aujourd'hui",
     "search": "Rechercher une règle ou une entité",
@@ -264,7 +357,47 @@ const HRP_STRINGS = {
     "illuminance": "Helligkeit",
     "naps": "Mittagsschlaf",
     "add_room": "Raum hinzufügen",
-    "rooms_help": "Raumnamen, wie der Saugroboter sie meldet. Verwendet von den Saugroboter- und Anwesenheitsregeln.",
+    "rooms_help": "Was die Regeln über jeden Raum wissen: Lichter, Öffnungen, Anwesenheit und Mittagsschlaf.",
+    "rm_discover": "Entdecken",
+    "rm_discover_help": "Findet die Räume deiner Home-Assistant-Bereiche mit ihren Lichtern, Öffnungen, Anwesenheits- und Helligkeitssensoren. Nichts wird gespeichert, bevor du es prüfst.",
+    "rm_discovered": "Räume gefunden oder ergänzt: prüfen, dann speichern.",
+    "rm_nothing_found": "Nichts Neues in den Bereichen.",
+    "rm_collapse": "Alle einklappen",
+    "rm_toggle": "{name} ein- oder ausblenden",
+    "rm_up": "Nach oben",
+    "rm_down": "Nach unten",
+    "rm_name": "Name",
+    "rm_area": "Home-Assistant-Bereich",
+    "rm_area_none": "Keiner",
+    "rm_name_help": "Der Name, den der Saugroboter meldet; der Bereich findet seine Entitäten.",
+    "rm_used_by": "Verwendet von {rules}.",
+    "rm_unused": "Noch keine Regel verwendet ihn.",
+    "rm_rules_one": "1 Regel",
+    "rm_rules_other": "{n} Regeln",
+    "rm_pausing_one": "sein Mittagsschlaf pausiert 1 Regel",
+    "rm_pausing_other": "sein Mittagsschlaf pausiert {n} Regeln",
+    "rm_someone": "Jemand da",
+    "rm_napping": "Mittagsschlaf",
+    "rm_open": "{name} offen",
+    "rm_unavailable_one": "1 Entität nicht verfügbar",
+    "rm_unavailable_other": "{n} Entitäten nicht verfügbar",
+    "rm_areas_unused": "Home-Assistant-Bereiche ohne Raum",
+    "rm_other_room": "Anderer Raum",
+    "rm_lights": "Lichter",
+    "rm_openings": "Fenster und Türen",
+    "rm_presence": "Anwesenheit und Helligkeit",
+    "rm_devices": "Geräte",
+    "rm_naps": "Mittagsschlaf",
+    "rm_light": "Licht",
+    "rm_opening": "Fenster oder Tür",
+    "rm_presence_sensor": "Anwesenheitssensor",
+    "rm_illuminance": "Helligkeitssensor",
+    "rm_climate": "Klimaanlage",
+    "rm_nap": "Mittagsschlaf",
+    "rm_nap_schedule": "Mittagsschlaf-Zeitplan",
+    "rm_nap_from": "Von",
+    "rm_nap_to": "Bis",
+    "rm_nap_days_help": "Kein Tag gewählt: jeden Tag.",
     "remove": "Entfernen",
     "today": "Auslösungen heute",
     "search": "Regel oder Entität suchen",
@@ -357,7 +490,47 @@ const HRP_STRINGS = {
     "illuminance": "Luminosidad",
     "naps": "Siestas",
     "add_room": "Añadir una habitación",
-    "rooms_help": "Nombres de las habitaciones tal como los indica el robot. Los usan las reglas del robot y de presencia.",
+    "rooms_help": "Lo que las reglas saben de cada estancia: sus luces, aberturas, presencia y siestas.",
+    "rm_discover": "Descubrir",
+    "rm_discover_help": "Encuentra las estancias de tus áreas de Home Assistant, con sus luces, aberturas y sensores de presencia y de luz. No se guarda nada antes de que lo revises.",
+    "rm_discovered": "Estancias encontradas o completadas: revísalas y guarda.",
+    "rm_nothing_found": "Nada nuevo en las áreas.",
+    "rm_collapse": "Plegar todo",
+    "rm_toggle": "Mostrar u ocultar {name}",
+    "rm_up": "Subir",
+    "rm_down": "Bajar",
+    "rm_name": "Nombre",
+    "rm_area": "Área de Home Assistant",
+    "rm_area_none": "Ninguna",
+    "rm_name_help": "El nombre que indica el robot aspirador; el área encuentra sus entidades.",
+    "rm_used_by": "Usada por {rules}.",
+    "rm_unused": "Ninguna regla la usa todavía.",
+    "rm_rules_one": "1 regla",
+    "rm_rules_other": "{n} reglas",
+    "rm_pausing_one": "sus siestas pausan 1 regla",
+    "rm_pausing_other": "sus siestas pausan {n} reglas",
+    "rm_someone": "Alguien",
+    "rm_napping": "Siesta",
+    "rm_open": "{name} abierta",
+    "rm_unavailable_one": "1 entidad no disponible",
+    "rm_unavailable_other": "{n} entidades no disponibles",
+    "rm_areas_unused": "Áreas de Home Assistant sin estancia",
+    "rm_other_room": "Otra estancia",
+    "rm_lights": "Luces",
+    "rm_openings": "Ventanas y puertas",
+    "rm_presence": "Presencia y luz",
+    "rm_devices": "Aparatos",
+    "rm_naps": "Siestas",
+    "rm_light": "Luz",
+    "rm_opening": "Ventana o puerta",
+    "rm_presence_sensor": "Sensor de presencia",
+    "rm_illuminance": "Sensor de luz",
+    "rm_climate": "Aire acondicionado",
+    "rm_nap": "Siesta",
+    "rm_nap_schedule": "Horario de siesta",
+    "rm_nap_from": "Desde",
+    "rm_nap_to": "Hasta",
+    "rm_nap_days_help": "Ningún día elegido: todos los días.",
     "remove": "Quitar",
     "today": "Activaciones hoy",
     "search": "Buscar una regla o una entidad",
@@ -450,7 +623,47 @@ const HRP_STRINGS = {
     "illuminance": "Luminosità",
     "naps": "Riposini",
     "add_room": "Aggiungi una stanza",
-    "rooms_help": "Nomi delle stanze come li riporta il robot. Usati dalle regole del robot e di presenza.",
+    "rooms_help": "Ciò che le regole sanno di ogni stanza: luci, aperture, presenza e riposini.",
+    "rm_discover": "Scopri",
+    "rm_discover_help": "Trova le stanze delle tue aree di Home Assistant, con luci, aperture e sensori di presenza e di luminosità. Nulla viene salvato prima della tua verifica.",
+    "rm_discovered": "Stanze trovate o completate: verificale, poi salva.",
+    "rm_nothing_found": "Niente di nuovo nelle aree.",
+    "rm_collapse": "Comprimi tutto",
+    "rm_toggle": "Mostra o nascondi {name}",
+    "rm_up": "Sposta su",
+    "rm_down": "Sposta giù",
+    "rm_name": "Nome",
+    "rm_area": "Area di Home Assistant",
+    "rm_area_none": "Nessuna",
+    "rm_name_help": "Il nome che riporta il robot aspirapolvere; l'area trova le sue entità.",
+    "rm_used_by": "Usata da {rules}.",
+    "rm_unused": "Nessuna regola la usa ancora.",
+    "rm_rules_one": "1 regola",
+    "rm_rules_other": "{n} regole",
+    "rm_pausing_one": "i suoi riposini mettono in pausa 1 regola",
+    "rm_pausing_other": "i suoi riposini mettono in pausa {n} regole",
+    "rm_someone": "Qualcuno",
+    "rm_napping": "Riposino",
+    "rm_open": "{name} aperta",
+    "rm_unavailable_one": "1 entità non disponibile",
+    "rm_unavailable_other": "{n} entità non disponibili",
+    "rm_areas_unused": "Aree di Home Assistant senza stanza",
+    "rm_other_room": "Altra stanza",
+    "rm_lights": "Luci",
+    "rm_openings": "Finestre e porte",
+    "rm_presence": "Presenza e luminosità",
+    "rm_devices": "Dispositivi",
+    "rm_naps": "Riposini",
+    "rm_light": "Luce",
+    "rm_opening": "Finestra o porta",
+    "rm_presence_sensor": "Sensore di presenza",
+    "rm_illuminance": "Sensore di luminosità",
+    "rm_climate": "Condizionatore",
+    "rm_nap": "Riposino",
+    "rm_nap_schedule": "Programma del riposino",
+    "rm_nap_from": "Dalle",
+    "rm_nap_to": "Alle",
+    "rm_nap_days_help": "Nessun giorno scelto: tutti i giorni.",
     "remove": "Rimuovi",
     "today": "Attivazioni di oggi",
     "search": "Cerca una regola o un'entità",
@@ -543,7 +756,47 @@ const HRP_STRINGS = {
     "illuminance": "Lichtsterkte",
     "naps": "Dutjes",
     "add_room": "Ruimte toevoegen",
-    "rooms_help": "Namen van ruimtes zoals de robot ze meldt. Gebruikt door de robot- en aanwezigheidsregels.",
+    "rooms_help": "Wat de regels over elke kamer weten: lampen, openingen, aanwezigheid en dutjes.",
+    "rm_discover": "Ontdekken",
+    "rm_discover_help": "Vindt de kamers van je Home Assistant-ruimtes, met hun lampen, openingen en aanwezigheids- en lichtsensoren. Niets wordt opgeslagen voordat je het controleert.",
+    "rm_discovered": "Kamers gevonden of aangevuld: controleer ze en sla op.",
+    "rm_nothing_found": "Niets nieuws in de ruimtes.",
+    "rm_collapse": "Alles inklappen",
+    "rm_toggle": "{name} tonen of verbergen",
+    "rm_up": "Omhoog",
+    "rm_down": "Omlaag",
+    "rm_name": "Naam",
+    "rm_area": "Home Assistant-ruimte",
+    "rm_area_none": "Geen",
+    "rm_name_help": "De naam die de robotstofzuiger meldt; de ruimte vindt haar entiteiten.",
+    "rm_used_by": "Gebruikt door {rules}.",
+    "rm_unused": "Nog geen regel gebruikt haar.",
+    "rm_rules_one": "1 regel",
+    "rm_rules_other": "{n} regels",
+    "rm_pausing_one": "haar dutjes pauzeren 1 regel",
+    "rm_pausing_other": "haar dutjes pauzeren {n} regels",
+    "rm_someone": "Iemand",
+    "rm_napping": "Dutje",
+    "rm_open": "{name} open",
+    "rm_unavailable_one": "1 entiteit niet beschikbaar",
+    "rm_unavailable_other": "{n} entiteiten niet beschikbaar",
+    "rm_areas_unused": "Home Assistant-ruimtes zonder kamer",
+    "rm_other_room": "Andere kamer",
+    "rm_lights": "Lampen",
+    "rm_openings": "Ramen en deuren",
+    "rm_presence": "Aanwezigheid en licht",
+    "rm_devices": "Apparaten",
+    "rm_naps": "Dutjes",
+    "rm_light": "Lamp",
+    "rm_opening": "Raam of deur",
+    "rm_presence_sensor": "Aanwezigheidssensor",
+    "rm_illuminance": "Lichtsensor",
+    "rm_climate": "Airco",
+    "rm_nap": "Dutje",
+    "rm_nap_schedule": "Dutjesschema",
+    "rm_nap_from": "Van",
+    "rm_nap_to": "Tot",
+    "rm_nap_days_help": "Geen dag gekozen: elke dag.",
     "remove": "Verwijderen",
     "today": "Uitvoeringen vandaag",
     "search": "Zoek een regel of entiteit",
@@ -636,7 +889,47 @@ const HRP_STRINGS = {
     "illuminance": "Luminosidade",
     "naps": "Sestas",
     "add_room": "Adicionar uma divisão",
-    "rooms_help": "Nomes das divisões tal como o robô os indica. Usados pelas regras do robô e de presença.",
+    "rooms_help": "O que as regras sabem de cada divisão: luzes, aberturas, presença e sestas.",
+    "rm_discover": "Descobrir",
+    "rm_discover_help": "Encontra as divisões das suas áreas do Home Assistant, com luzes, aberturas e sensores de presença e de luz. Nada é guardado antes de verificar.",
+    "rm_discovered": "Divisões encontradas ou completadas: verifique-as e guarde.",
+    "rm_nothing_found": "Nada de novo nas áreas.",
+    "rm_collapse": "Recolher tudo",
+    "rm_toggle": "Mostrar ou ocultar {name}",
+    "rm_up": "Subir",
+    "rm_down": "Descer",
+    "rm_name": "Nome",
+    "rm_area": "Área do Home Assistant",
+    "rm_area_none": "Nenhuma",
+    "rm_name_help": "O nome que o robô aspirador indica; a área encontra as suas entidades.",
+    "rm_used_by": "Usada por {rules}.",
+    "rm_unused": "Nenhuma regra a usa ainda.",
+    "rm_rules_one": "1 regra",
+    "rm_rules_other": "{n} regras",
+    "rm_pausing_one": "as suas sestas pausam 1 regra",
+    "rm_pausing_other": "as suas sestas pausam {n} regras",
+    "rm_someone": "Alguém",
+    "rm_napping": "Sesta",
+    "rm_open": "{name} aberta",
+    "rm_unavailable_one": "1 entidade indisponível",
+    "rm_unavailable_other": "{n} entidades indisponíveis",
+    "rm_areas_unused": "Áreas do Home Assistant sem divisão",
+    "rm_other_room": "Outra divisão",
+    "rm_lights": "Luzes",
+    "rm_openings": "Janelas e portas",
+    "rm_presence": "Presença e luz",
+    "rm_devices": "Aparelhos",
+    "rm_naps": "Sestas",
+    "rm_light": "Luz",
+    "rm_opening": "Janela ou porta",
+    "rm_presence_sensor": "Sensor de presença",
+    "rm_illuminance": "Sensor de luz",
+    "rm_climate": "Ar condicionado",
+    "rm_nap": "Sesta",
+    "rm_nap_schedule": "Horário da sesta",
+    "rm_nap_from": "Das",
+    "rm_nap_to": "Às",
+    "rm_nap_days_help": "Nenhum dia escolhido: todos os dias.",
     "remove": "Remover",
     "today": "Ativações de hoje",
     "search": "Procurar uma regra ou uma entidade",
@@ -729,7 +1022,47 @@ const HRP_STRINGS = {
     "illuminance": "Natężenie światła",
     "naps": "Drzemki",
     "add_room": "Dodaj pomieszczenie",
-    "rooms_help": "Nazwy pomieszczeń tak, jak podaje je robot. Używane przez reguły robota i obecności.",
+    "rooms_help": "Co reguły wiedzą o każdym pokoju: światła, otwory, obecność i drzemki.",
+    "rm_discover": "Wykryj",
+    "rm_discover_help": "Znajduje pokoje Twoich obszarów Home Assistant z ich światłami, otworami i czujnikami obecności i jasności. Nic nie jest zapisywane przed Twoim sprawdzeniem.",
+    "rm_discovered": "Znaleziono lub uzupełniono pokoje: sprawdź je i zapisz.",
+    "rm_nothing_found": "Nic nowego w obszarach.",
+    "rm_collapse": "Zwiń wszystko",
+    "rm_toggle": "Pokaż lub ukryj {name}",
+    "rm_up": "W górę",
+    "rm_down": "W dół",
+    "rm_name": "Nazwa",
+    "rm_area": "Obszar Home Assistant",
+    "rm_area_none": "Brak",
+    "rm_name_help": "Nazwa zgłaszana przez robota sprzątającego; obszar znajduje jego encje.",
+    "rm_used_by": "Używany przez {rules}.",
+    "rm_unused": "Żadna reguła jeszcze go nie używa.",
+    "rm_rules_one": "1 reguła",
+    "rm_rules_other": "Reguły: {n}",
+    "rm_pausing_one": "jego drzemki wstrzymują 1 regułę",
+    "rm_pausing_other": "jego drzemki wstrzymują reguły: {n}",
+    "rm_someone": "Ktoś jest",
+    "rm_napping": "Drzemka",
+    "rm_open": "{name} otwarte",
+    "rm_unavailable_one": "1 encja niedostępna",
+    "rm_unavailable_other": "Niedostępne encje: {n}",
+    "rm_areas_unused": "Obszary Home Assistant bez pokoju",
+    "rm_other_room": "Inny pokój",
+    "rm_lights": "Światła",
+    "rm_openings": "Okna i drzwi",
+    "rm_presence": "Obecność i jasność",
+    "rm_devices": "Urządzenia",
+    "rm_naps": "Drzemki",
+    "rm_light": "Światło",
+    "rm_opening": "Okno lub drzwi",
+    "rm_presence_sensor": "Czujnik obecności",
+    "rm_illuminance": "Czujnik jasności",
+    "rm_climate": "Klimatyzator",
+    "rm_nap": "Drzemka",
+    "rm_nap_schedule": "Harmonogram drzemki",
+    "rm_nap_from": "Od",
+    "rm_nap_to": "Do",
+    "rm_nap_days_help": "Nie wybrano dnia: codziennie.",
     "remove": "Usuń",
     "today": "Uruchomienia dzisiaj",
     "search": "Szukaj reguły lub encji",
@@ -822,7 +1155,47 @@ const HRP_STRINGS = {
     "illuminance": "Осветљеност",
     "naps": "Дремке",
     "add_room": "Додај просторију",
-    "rooms_help": "Називи просторија онако како их робот пријављује. Користе их правила робота и присуства.",
+    "rooms_help": "Шта правила знају о свакој просторији: светла, отворе, присуство и дремке.",
+    "rm_discover": "Откриј",
+    "rm_discover_help": "Проналази просторије ваших Home Assistant зона, са светлима, отворима и сензорима присуства и осветљености. Ништа се не чува пре ваше провере.",
+    "rm_discovered": "Просторије пронађене или допуњене: проверите их, па сачувајте.",
+    "rm_nothing_found": "Ништа ново у зонама.",
+    "rm_collapse": "Скупи све",
+    "rm_toggle": "Прикажи или сакриј {name}",
+    "rm_up": "Горе",
+    "rm_down": "Доле",
+    "rm_name": "Назив",
+    "rm_area": "Home Assistant зона",
+    "rm_area_none": "Ниједна",
+    "rm_name_help": "Назив који пријављује усисивач; зона проналази своје ентитете.",
+    "rm_used_by": "Користи је {rules}.",
+    "rm_unused": "Још је ниједно правило не користи.",
+    "rm_rules_one": "1 правило",
+    "rm_rules_other": "Правила: {n}",
+    "rm_pausing_one": "њене дремке паузирају 1 правило",
+    "rm_pausing_other": "њене дремке паузирају правила: {n}",
+    "rm_someone": "Неко је ту",
+    "rm_napping": "Дремка",
+    "rm_open": "{name} отворено",
+    "rm_unavailable_one": "1 ентитет недоступан",
+    "rm_unavailable_other": "Недоступни ентитети: {n}",
+    "rm_areas_unused": "Home Assistant зоне без просторије",
+    "rm_other_room": "Друга просторија",
+    "rm_lights": "Светла",
+    "rm_openings": "Прозори и врата",
+    "rm_presence": "Присуство и осветљеност",
+    "rm_devices": "Уређаји",
+    "rm_naps": "Дремке",
+    "rm_light": "Светло",
+    "rm_opening": "Прозор или врата",
+    "rm_presence_sensor": "Сензор присуства",
+    "rm_illuminance": "Сензор осветљености",
+    "rm_climate": "Клима уређај",
+    "rm_nap": "Дремка",
+    "rm_nap_schedule": "Распоред дремке",
+    "rm_nap_from": "Од",
+    "rm_nap_to": "До",
+    "rm_nap_days_help": "Ниједан дан: сваки дан.",
     "remove": "Уклони",
     "today": "Данашња покретања",
     "search": "Тражи правило или ентитет",
@@ -915,7 +1288,47 @@ const HRP_STRINGS = {
     "illuminance": "Luminozitate",
     "naps": "Somnul de prânz",
     "add_room": "Adaugă o cameră",
-    "rooms_help": "Numele camerelor așa cum le raportează robotul. Folosite de regulile robotului și de prezență.",
+    "rooms_help": "Ce știu regulile despre fiecare cameră: lumini, deschideri, prezență și somnuri de prânz.",
+    "rm_discover": "Descoperă",
+    "rm_discover_help": "Găsește camerele zonelor tale Home Assistant, cu lumini, deschideri și senzori de prezență și de luminozitate. Nimic nu se salvează înainte de verificarea ta.",
+    "rm_discovered": "Camere găsite sau completate: verifică-le, apoi salvează.",
+    "rm_nothing_found": "Nimic nou în zone.",
+    "rm_collapse": "Restrânge tot",
+    "rm_toggle": "Arată sau ascunde {name}",
+    "rm_up": "Mută sus",
+    "rm_down": "Mută jos",
+    "rm_name": "Nume",
+    "rm_area": "Zonă Home Assistant",
+    "rm_area_none": "Niciuna",
+    "rm_name_help": "Numele raportat de aspirator; zona își găsește entitățile.",
+    "rm_used_by": "Folosită de {rules}.",
+    "rm_unused": "Nicio regulă nu o folosește încă.",
+    "rm_rules_one": "1 regulă",
+    "rm_rules_other": "{n} reguli",
+    "rm_pausing_one": "somnurile ei pun 1 regulă pe pauză",
+    "rm_pausing_other": "somnurile ei pun {n} reguli pe pauză",
+    "rm_someone": "Cineva",
+    "rm_napping": "Somn de prânz",
+    "rm_open": "{name} deschisă",
+    "rm_unavailable_one": "1 entitate indisponibilă",
+    "rm_unavailable_other": "{n} entități indisponibile",
+    "rm_areas_unused": "Zone Home Assistant fără cameră",
+    "rm_other_room": "Altă cameră",
+    "rm_lights": "Lumini",
+    "rm_openings": "Ferestre și uși",
+    "rm_presence": "Prezență și luminozitate",
+    "rm_devices": "Aparate",
+    "rm_naps": "Somnuri de prânz",
+    "rm_light": "Lumină",
+    "rm_opening": "Fereastră sau ușă",
+    "rm_presence_sensor": "Senzor de prezență",
+    "rm_illuminance": "Senzor de luminozitate",
+    "rm_climate": "Aer condiționat",
+    "rm_nap": "Somn de prânz",
+    "rm_nap_schedule": "Program de somn",
+    "rm_nap_from": "De la",
+    "rm_nap_to": "Până la",
+    "rm_nap_days_help": "Nicio zi aleasă: în fiecare zi.",
     "remove": "Elimină",
     "today": "Declanșări azi",
     "search": "Caută o regulă sau o entitate",
@@ -1008,7 +1421,47 @@ const HRP_STRINGS = {
     "illuminance": "Lysstyrke",
     "naps": "Lure",
     "add_room": "Tilføj et rum",
-    "rooms_help": "Navne på rum, som robotten melder dem. Bruges af robot- og tilstedeværelsesreglerne.",
+    "rooms_help": "Hvad reglerne ved om hvert rum: lys, åbninger, tilstedeværelse og lure.",
+    "rm_discover": "Opdag",
+    "rm_discover_help": "Finder rummene i dine Home Assistant-områder med deres lys, åbninger og sensorer for tilstedeværelse og lys. Intet gemmes, før du har tjekket.",
+    "rm_discovered": "Rum fundet eller udfyldt: tjek dem, og gem.",
+    "rm_nothing_found": "Intet nyt i områderne.",
+    "rm_collapse": "Fold alle sammen",
+    "rm_toggle": "Vis eller skjul {name}",
+    "rm_up": "Flyt op",
+    "rm_down": "Flyt ned",
+    "rm_name": "Navn",
+    "rm_area": "Home Assistant-område",
+    "rm_area_none": "Intet",
+    "rm_name_help": "Navnet robotstøvsugeren melder; området finder dets entiteter.",
+    "rm_used_by": "Bruges af {rules}.",
+    "rm_unused": "Ingen regel bruger det endnu.",
+    "rm_rules_one": "1 regel",
+    "rm_rules_other": "{n} regler",
+    "rm_pausing_one": "dets lure sætter 1 regel på pause",
+    "rm_pausing_other": "dets lure sætter {n} regler på pause",
+    "rm_someone": "Nogen",
+    "rm_napping": "Lur",
+    "rm_open": "{name} åben",
+    "rm_unavailable_one": "1 entitet utilgængelig",
+    "rm_unavailable_other": "{n} entiteter utilgængelige",
+    "rm_areas_unused": "Home Assistant-områder uden rum",
+    "rm_other_room": "Andet rum",
+    "rm_lights": "Lys",
+    "rm_openings": "Vinduer og døre",
+    "rm_presence": "Tilstedeværelse og lys",
+    "rm_devices": "Apparater",
+    "rm_naps": "Lure",
+    "rm_light": "Lys",
+    "rm_opening": "Vindue eller dør",
+    "rm_presence_sensor": "Tilstedeværelsessensor",
+    "rm_illuminance": "Lyssensor",
+    "rm_climate": "Aircondition",
+    "rm_nap": "Lur",
+    "rm_nap_schedule": "Lur-tidsplan",
+    "rm_nap_from": "Fra",
+    "rm_nap_to": "Til",
+    "rm_nap_days_help": "Ingen dag valgt: hver dag.",
     "remove": "Fjern",
     "today": "Kørsler i dag",
     "search": "Søg efter en regel eller en enhed",
@@ -1101,7 +1554,47 @@ const HRP_STRINGS = {
     "illuminance": "Ljusstyrka",
     "naps": "Tupplurar",
     "add_room": "Lägg till ett rum",
-    "rooms_help": "Rummens namn så som roboten rapporterar dem. Används av robot- och närvaroreglerna.",
+    "rooms_help": "Vad reglerna vet om varje rum: lampor, öppningar, närvaro och tupplurar.",
+    "rm_discover": "Upptäck",
+    "rm_discover_help": "Hittar rummen i dina Home Assistant-områden med deras lampor, öppningar och närvaro- och ljussensorer. Inget sparas innan du har kontrollerat.",
+    "rm_discovered": "Rum hittade eller kompletterade: kontrollera dem och spara.",
+    "rm_nothing_found": "Inget nytt i områdena.",
+    "rm_collapse": "Fäll ihop alla",
+    "rm_toggle": "Visa eller dölj {name}",
+    "rm_up": "Flytta upp",
+    "rm_down": "Flytta ned",
+    "rm_name": "Namn",
+    "rm_area": "Home Assistant-område",
+    "rm_area_none": "Inget",
+    "rm_name_help": "Namnet som robotdammsugaren rapporterar; området hittar dess entiteter.",
+    "rm_used_by": "Används av {rules}.",
+    "rm_unused": "Ingen regel använder det ännu.",
+    "rm_rules_one": "1 regel",
+    "rm_rules_other": "{n} regler",
+    "rm_pausing_one": "dess tupplurar pausar 1 regel",
+    "rm_pausing_other": "dess tupplurar pausar {n} regler",
+    "rm_someone": "Någon",
+    "rm_napping": "Tupplur",
+    "rm_open": "{name} öppen",
+    "rm_unavailable_one": "1 entitet otillgänglig",
+    "rm_unavailable_other": "{n} entiteter otillgängliga",
+    "rm_areas_unused": "Home Assistant-områden utan rum",
+    "rm_other_room": "Annat rum",
+    "rm_lights": "Lampor",
+    "rm_openings": "Fönster och dörrar",
+    "rm_presence": "Närvaro och ljus",
+    "rm_devices": "Apparater",
+    "rm_naps": "Tupplurar",
+    "rm_light": "Lampa",
+    "rm_opening": "Fönster eller dörr",
+    "rm_presence_sensor": "Närvarosensor",
+    "rm_illuminance": "Ljussensor",
+    "rm_climate": "Luftkonditionering",
+    "rm_nap": "Tupplur",
+    "rm_nap_schedule": "Tupplursschema",
+    "rm_nap_from": "Från",
+    "rm_nap_to": "Till",
+    "rm_nap_days_help": "Ingen dag vald: varje dag.",
     "remove": "Ta bort",
     "today": "Körningar i dag",
     "search": "Sök efter en regel eller en entitet",
@@ -1194,7 +1687,47 @@ const HRP_STRINGS = {
     "illuminance": "Осветеност",
     "naps": "Следобеден сън",
     "add_room": "Добави стая",
-    "rooms_help": "Имената на стаите, както ги съобщава роботът. Използват се от правилата за робота и присъствието.",
+    "rooms_help": "Какво знаят правилата за всяка стая: светлини, отвори, присъствие и дрямки.",
+    "rm_discover": "Откриване",
+    "rm_discover_help": "Намира стаите на вашите зони в Home Assistant, със светлините, отворите и сензорите за присъствие и осветеност. Нищо не се записва преди проверката ви.",
+    "rm_discovered": "Намерени или допълнени стаи: проверете ги и запишете.",
+    "rm_nothing_found": "Нищо ново в зоните.",
+    "rm_collapse": "Свий всички",
+    "rm_toggle": "Покажи или скрий {name}",
+    "rm_up": "Нагоре",
+    "rm_down": "Надолу",
+    "rm_name": "Име",
+    "rm_area": "Зона в Home Assistant",
+    "rm_area_none": "Няма",
+    "rm_name_help": "Името, което съобщава прахосмукачката; зоната намира своите обекти.",
+    "rm_used_by": "Използва се от {rules}.",
+    "rm_unused": "Още никое правило не я използва.",
+    "rm_rules_one": "1 правило",
+    "rm_rules_other": "{n} правила",
+    "rm_pausing_one": "дрямките ѝ спират 1 правило",
+    "rm_pausing_other": "дрямките ѝ спират {n} правила",
+    "rm_someone": "Има някой",
+    "rm_napping": "Дрямка",
+    "rm_open": "{name} отворено",
+    "rm_unavailable_one": "1 недостъпен обект",
+    "rm_unavailable_other": "{n} недостъпни обекта",
+    "rm_areas_unused": "Зони в Home Assistant без стая",
+    "rm_other_room": "Друга стая",
+    "rm_lights": "Светлини",
+    "rm_openings": "Прозорци и врати",
+    "rm_presence": "Присъствие и осветеност",
+    "rm_devices": "Уреди",
+    "rm_naps": "Дрямки",
+    "rm_light": "Светлина",
+    "rm_opening": "Прозорец или врата",
+    "rm_presence_sensor": "Сензор за присъствие",
+    "rm_illuminance": "Сензор за осветеност",
+    "rm_climate": "Климатик",
+    "rm_nap": "Дрямка",
+    "rm_nap_schedule": "График за дрямка",
+    "rm_nap_from": "От",
+    "rm_nap_to": "До",
+    "rm_nap_days_help": "Не е избран ден: всеки ден.",
     "remove": "Премахни",
     "today": "Изпълнения днес",
     "search": "Търси правило или обект",
@@ -1287,7 +1820,47 @@ const HRP_STRINGS = {
     "illuminance": "Освещённость",
     "naps": "Дневной сон",
     "add_room": "Добавить комнату",
-    "rooms_help": "Названия комнат так, как их сообщает робот. Используются правилами робота и присутствия.",
+    "rooms_help": "Что правила знают о каждой комнате: свет, проёмы, присутствие и дневной сон.",
+    "rm_discover": "Найти",
+    "rm_discover_help": "Находит комнаты ваших зон Home Assistant с их светом, проёмами и датчиками присутствия и освещённости. Ничего не сохраняется до вашей проверки.",
+    "rm_discovered": "Комнаты найдены или дополнены: проверьте их и сохраните.",
+    "rm_nothing_found": "В зонах ничего нового.",
+    "rm_collapse": "Свернуть все",
+    "rm_toggle": "Показать или скрыть {name}",
+    "rm_up": "Вверх",
+    "rm_down": "Вниз",
+    "rm_name": "Название",
+    "rm_area": "Зона Home Assistant",
+    "rm_area_none": "Нет",
+    "rm_name_help": "Название, которое сообщает пылесос; зона находит свои объекты.",
+    "rm_used_by": "Используется: {rules}.",
+    "rm_unused": "Пока ни одно правило её не использует.",
+    "rm_rules_one": "1 правило",
+    "rm_rules_other": "Правил: {n}",
+    "rm_pausing_one": "её дневной сон приостанавливает 1 правило",
+    "rm_pausing_other": "её дневной сон приостанавливает правил: {n}",
+    "rm_someone": "Кто-то есть",
+    "rm_napping": "Дневной сон",
+    "rm_open": "{name}: открыто",
+    "rm_unavailable_one": "1 объект недоступен",
+    "rm_unavailable_other": "Недоступных объектов: {n}",
+    "rm_areas_unused": "Зоны Home Assistant без комнаты",
+    "rm_other_room": "Другая комната",
+    "rm_lights": "Свет",
+    "rm_openings": "Окна и двери",
+    "rm_presence": "Присутствие и освещённость",
+    "rm_devices": "Устройства",
+    "rm_naps": "Дневной сон",
+    "rm_light": "Свет",
+    "rm_opening": "Окно или дверь",
+    "rm_presence_sensor": "Датчик присутствия",
+    "rm_illuminance": "Датчик освещённости",
+    "rm_climate": "Кондиционер",
+    "rm_nap": "Дневной сон",
+    "rm_nap_schedule": "Расписание дневного сна",
+    "rm_nap_from": "С",
+    "rm_nap_to": "До",
+    "rm_nap_days_help": "День не выбран: каждый день.",
     "remove": "Убрать",
     "today": "Запуски сегодня",
     "search": "Найти правило или объект",
@@ -1380,7 +1953,47 @@ const HRP_STRINGS = {
     "illuminance": "Освітленість",
     "naps": "Денний сон",
     "add_room": "Додати кімнату",
-    "rooms_help": "Назви кімнат так, як їх повідомляє робот. Використовуються правилами робота й присутності.",
+    "rooms_help": "Що правила знають про кожну кімнату: світло, отвори, присутність і денний сон.",
+    "rm_discover": "Знайти",
+    "rm_discover_help": "Знаходить кімнати ваших зон Home Assistant з їхнім світлом, отворами й датчиками присутності та освітленості. Нічого не зберігається до вашої перевірки.",
+    "rm_discovered": "Кімнати знайдено або доповнено: перевірте їх і збережіть.",
+    "rm_nothing_found": "У зонах нічого нового.",
+    "rm_collapse": "Згорнути все",
+    "rm_toggle": "Показати або сховати {name}",
+    "rm_up": "Вгору",
+    "rm_down": "Вниз",
+    "rm_name": "Назва",
+    "rm_area": "Зона Home Assistant",
+    "rm_area_none": "Немає",
+    "rm_name_help": "Назва, яку повідомляє пилосос; зона знаходить свої об'єкти.",
+    "rm_used_by": "Використовує: {rules}.",
+    "rm_unused": "Поки жодне правило її не використовує.",
+    "rm_rules_one": "1 правило",
+    "rm_rules_other": "Правил: {n}",
+    "rm_pausing_one": "її денний сон призупиняє 1 правило",
+    "rm_pausing_other": "її денний сон призупиняє правил: {n}",
+    "rm_someone": "Хтось є",
+    "rm_napping": "Денний сон",
+    "rm_open": "{name}: відкрито",
+    "rm_unavailable_one": "1 об'єкт недоступний",
+    "rm_unavailable_other": "Недоступних об'єктів: {n}",
+    "rm_areas_unused": "Зони Home Assistant без кімнати",
+    "rm_other_room": "Інша кімната",
+    "rm_lights": "Світло",
+    "rm_openings": "Вікна й двері",
+    "rm_presence": "Присутність і освітленість",
+    "rm_devices": "Пристрої",
+    "rm_naps": "Денний сон",
+    "rm_light": "Світло",
+    "rm_opening": "Вікно або двері",
+    "rm_presence_sensor": "Датчик присутності",
+    "rm_illuminance": "Датчик освітленості",
+    "rm_climate": "Кондиціонер",
+    "rm_nap": "Денний сон",
+    "rm_nap_schedule": "Розклад денного сну",
+    "rm_nap_from": "З",
+    "rm_nap_to": "До",
+    "rm_nap_days_help": "День не вибрано: щодня.",
     "remove": "Прибрати",
     "today": "Запуски сьогодні",
     "search": "Знайти правило або об'єкт",
@@ -1473,7 +2086,47 @@ const HRP_STRINGS = {
     "illuminance": "Megvilágítás",
     "naps": "Délutáni alvás",
     "add_room": "Helyiség hozzáadása",
-    "rooms_help": "A helyiségek neve, ahogy a robot jelenti őket. A robot- és jelenlétszabályok használják.",
+    "rooms_help": "Amit a szabályok tudnak az egyes szobákról: lámpák, nyílászárók, jelenlét és szundi.",
+    "rm_discover": "Felderítés",
+    "rm_discover_help": "Megkeresi a Home Assistant területeid szobáit a lámpáikkal, nyílászáróikkal, jelenlét- és fényérzékelőikkel. Semmi sem mentődik az ellenőrzésed előtt.",
+    "rm_discovered": "Szobák megtalálva vagy kiegészítve: ellenőrizd, majd mentsd.",
+    "rm_nothing_found": "Semmi új a területeken.",
+    "rm_collapse": "Mind összecsukása",
+    "rm_toggle": "{name} megjelenítése vagy elrejtése",
+    "rm_up": "Fel",
+    "rm_down": "Le",
+    "rm_name": "Név",
+    "rm_area": "Home Assistant terület",
+    "rm_area_none": "Nincs",
+    "rm_name_help": "A porszívó által jelentett név; a terület megtalálja az entitásait.",
+    "rm_used_by": "Használja: {rules}.",
+    "rm_unused": "Még egy szabály sem használja.",
+    "rm_rules_one": "1 szabály",
+    "rm_rules_other": "{n} szabály",
+    "rm_pausing_one": "a szundija 1 szabályt szüneteltet",
+    "rm_pausing_other": "a szundija {n} szabályt szüneteltet",
+    "rm_someone": "Valaki itt van",
+    "rm_napping": "Szundi",
+    "rm_open": "{name} nyitva",
+    "rm_unavailable_one": "1 entitás nem elérhető",
+    "rm_unavailable_other": "{n} entitás nem elérhető",
+    "rm_areas_unused": "Szoba nélküli Home Assistant területek",
+    "rm_other_room": "Másik szoba",
+    "rm_lights": "Lámpák",
+    "rm_openings": "Ablakok és ajtók",
+    "rm_presence": "Jelenlét és fényerő",
+    "rm_devices": "Eszközök",
+    "rm_naps": "Szundi",
+    "rm_light": "Lámpa",
+    "rm_opening": "Ablak vagy ajtó",
+    "rm_presence_sensor": "Jelenlét-érzékelő",
+    "rm_illuminance": "Fényérzékelő",
+    "rm_climate": "Légkondi",
+    "rm_nap": "Szundi",
+    "rm_nap_schedule": "Szundi ütemezés",
+    "rm_nap_from": "Ettől",
+    "rm_nap_to": "Eddig",
+    "rm_nap_days_help": "Nincs kiválasztott nap: minden nap.",
     "remove": "Eltávolítás",
     "today": "Mai futások",
     "search": "Szabály vagy entitás keresése",
@@ -1566,7 +2219,47 @@ const HRP_STRINGS = {
     "illuminance": "Osvetlenie",
     "naps": "Spánok cez deň",
     "add_room": "Pridať miestnosť",
-    "rooms_help": "Názvy miestností tak, ako ich hlási robot. Používajú ich pravidlá robota a prítomnosti.",
+    "rooms_help": "Čo pravidlá vedia o každej miestnosti: svetlá, otvory, prítomnosť a zdriemnutia.",
+    "rm_discover": "Objaviť",
+    "rm_discover_help": "Nájde miestnosti vašich oblastí Home Assistant s ich svetlami, otvormi a senzormi prítomnosti a osvetlenia. Nič sa neuloží pred vašou kontrolou.",
+    "rm_discovered": "Miestnosti nájdené alebo doplnené: skontrolujte ich a uložte.",
+    "rm_nothing_found": "V oblastiach nič nové.",
+    "rm_collapse": "Zbaliť všetko",
+    "rm_toggle": "Zobraziť alebo skryť {name}",
+    "rm_up": "Hore",
+    "rm_down": "Dole",
+    "rm_name": "Názov",
+    "rm_area": "Oblasť Home Assistant",
+    "rm_area_none": "Žiadna",
+    "rm_name_help": "Názov, ktorý hlási vysávač; oblasť nájde svoje entity.",
+    "rm_used_by": "Používa ju {rules}.",
+    "rm_unused": "Zatiaľ ju nepoužíva žiadne pravidlo.",
+    "rm_rules_one": "1 pravidlo",
+    "rm_rules_other": "Pravidlá: {n}",
+    "rm_pausing_one": "jej zdriemnutia pozastavia 1 pravidlo",
+    "rm_pausing_other": "jej zdriemnutia pozastavia pravidlá: {n}",
+    "rm_someone": "Niekto je tu",
+    "rm_napping": "Zdriemnutie",
+    "rm_open": "{name} otvorené",
+    "rm_unavailable_one": "1 entita nedostupná",
+    "rm_unavailable_other": "Nedostupné entity: {n}",
+    "rm_areas_unused": "Oblasti Home Assistant bez miestnosti",
+    "rm_other_room": "Iná miestnosť",
+    "rm_lights": "Svetlá",
+    "rm_openings": "Okná a dvere",
+    "rm_presence": "Prítomnosť a osvetlenie",
+    "rm_devices": "Zariadenia",
+    "rm_naps": "Zdriemnutia",
+    "rm_light": "Svetlo",
+    "rm_opening": "Okno alebo dvere",
+    "rm_presence_sensor": "Senzor prítomnosti",
+    "rm_illuminance": "Senzor osvetlenia",
+    "rm_climate": "Klimatizácia",
+    "rm_nap": "Zdriemnutie",
+    "rm_nap_schedule": "Plán zdriemnutia",
+    "rm_nap_from": "Od",
+    "rm_nap_to": "Do",
+    "rm_nap_days_help": "Nie je vybraný deň: každý deň.",
     "remove": "Odobrať",
     "today": "Dnešné spustenia",
     "search": "Hľadať pravidlo alebo entitu",
@@ -1659,7 +2352,47 @@ const HRP_STRINGS = {
     "illuminance": "Osvětlení",
     "naps": "Spánek přes den",
     "add_room": "Přidat místnost",
-    "rooms_help": "Názvy místností tak, jak je hlásí robot. Používají je pravidla robota a přítomnosti.",
+    "rooms_help": "Co pravidla vědí o každé místnosti: světla, otvory, přítomnost a zdřímnutí.",
+    "rm_discover": "Objevit",
+    "rm_discover_help": "Najde místnosti vašich oblastí Home Assistant s jejich světly, otvory a senzory přítomnosti a osvětlení. Nic se neuloží před vaší kontrolou.",
+    "rm_discovered": "Místnosti nalezeny nebo doplněny: zkontrolujte je a uložte.",
+    "rm_nothing_found": "V oblastech nic nového.",
+    "rm_collapse": "Sbalit vše",
+    "rm_toggle": "Zobrazit nebo skrýt {name}",
+    "rm_up": "Nahoru",
+    "rm_down": "Dolů",
+    "rm_name": "Název",
+    "rm_area": "Oblast Home Assistant",
+    "rm_area_none": "Žádná",
+    "rm_name_help": "Název, který hlásí vysavač; oblast najde své entity.",
+    "rm_used_by": "Používá ji {rules}.",
+    "rm_unused": "Zatím ji nepoužívá žádné pravidlo.",
+    "rm_rules_one": "1 pravidlo",
+    "rm_rules_other": "Pravidla: {n}",
+    "rm_pausing_one": "její zdřímnutí pozastaví 1 pravidlo",
+    "rm_pausing_other": "její zdřímnutí pozastaví pravidla: {n}",
+    "rm_someone": "Někdo je tu",
+    "rm_napping": "Zdřímnutí",
+    "rm_open": "{name} otevřeno",
+    "rm_unavailable_one": "1 entita nedostupná",
+    "rm_unavailable_other": "Nedostupné entity: {n}",
+    "rm_areas_unused": "Oblasti Home Assistant bez místnosti",
+    "rm_other_room": "Jiná místnost",
+    "rm_lights": "Světla",
+    "rm_openings": "Okna a dveře",
+    "rm_presence": "Přítomnost a osvětlení",
+    "rm_devices": "Zařízení",
+    "rm_naps": "Zdřímnutí",
+    "rm_light": "Světlo",
+    "rm_opening": "Okno nebo dveře",
+    "rm_presence_sensor": "Senzor přítomnosti",
+    "rm_illuminance": "Senzor osvětlení",
+    "rm_climate": "Klimatizace",
+    "rm_nap": "Zdřímnutí",
+    "rm_nap_schedule": "Plán zdřímnutí",
+    "rm_nap_from": "Od",
+    "rm_nap_to": "Do",
+    "rm_nap_days_help": "Není vybrán den: každý den.",
     "remove": "Odebrat",
     "today": "Dnešní spuštění",
     "search": "Hledat pravidlo nebo entitu",
@@ -1752,7 +2485,47 @@ const HRP_STRINGS = {
     "illuminance": "Osvetljenost",
     "naps": "Dremež",
     "add_room": "Dodaj prostor",
-    "rooms_help": "Imena prostorov, kot jih sporoča robot. Uporabljajo jih pravila robota in prisotnosti.",
+    "rooms_help": "Kaj pravila vedo o vsakem prostoru: luči, odprtine, prisotnost in dremeži.",
+    "rm_discover": "Odkrij",
+    "rm_discover_help": "Najde prostore vaših območij Home Assistant z njihovimi lučmi, odprtinami ter senzorji prisotnosti in osvetljenosti. Nič se ne shrani pred vašim pregledom.",
+    "rm_discovered": "Prostori najdeni ali dopolnjeni: preglejte jih in shranite.",
+    "rm_nothing_found": "V območjih nič novega.",
+    "rm_collapse": "Strni vse",
+    "rm_toggle": "Pokaži ali skrij {name}",
+    "rm_up": "Gor",
+    "rm_down": "Dol",
+    "rm_name": "Ime",
+    "rm_area": "Območje Home Assistant",
+    "rm_area_none": "Brez",
+    "rm_name_help": "Ime, ki ga sporoča sesalnik; območje najde svoje entitete.",
+    "rm_used_by": "Uporablja: {rules}.",
+    "rm_unused": "Nobeno pravilo ga še ne uporablja.",
+    "rm_rules_one": "1 pravilo",
+    "rm_rules_other": "Pravila: {n}",
+    "rm_pausing_one": "njegovi dremeži zaustavijo 1 pravilo",
+    "rm_pausing_other": "njegovi dremeži zaustavijo pravila: {n}",
+    "rm_someone": "Nekdo je tu",
+    "rm_napping": "Dremež",
+    "rm_open": "{name} odprto",
+    "rm_unavailable_one": "1 entiteta ni na voljo",
+    "rm_unavailable_other": "Entitete, ki niso na voljo: {n}",
+    "rm_areas_unused": "Območja Home Assistant brez prostora",
+    "rm_other_room": "Drug prostor",
+    "rm_lights": "Luči",
+    "rm_openings": "Okna in vrata",
+    "rm_presence": "Prisotnost in osvetljenost",
+    "rm_devices": "Naprave",
+    "rm_naps": "Dremeži",
+    "rm_light": "Luč",
+    "rm_opening": "Okno ali vrata",
+    "rm_presence_sensor": "Senzor prisotnosti",
+    "rm_illuminance": "Senzor osvetljenosti",
+    "rm_climate": "Klimatska naprava",
+    "rm_nap": "Dremež",
+    "rm_nap_schedule": "Urnik dremeža",
+    "rm_nap_from": "Od",
+    "rm_nap_to": "Do",
+    "rm_nap_days_help": "Ni izbranega dne: vsak dan.",
     "remove": "Odstrani",
     "today": "Današnji zagoni",
     "search": "Išči pravilo ali entiteto",
@@ -1845,7 +2618,47 @@ const HRP_STRINGS = {
     "illuminance": "Apgaismojums",
     "naps": "Diendusa",
     "add_room": "Pievienot telpu",
-    "rooms_help": "Telpu nosaukumi, kā tos ziņo robots. Tos izmanto robota un klātbūtnes noteikumi.",
+    "rooms_help": "Ko noteikumi zina par katru telpu: gaismas, atveres, klātbūtni un diendusas.",
+    "rm_discover": "Atklāt",
+    "rm_discover_help": "Atrod jūsu Home Assistant zonu telpas ar to gaismām, atverēm un klātbūtnes un apgaismojuma sensoriem. Nekas netiek saglabāts pirms jūsu pārbaudes.",
+    "rm_discovered": "Telpas atrastas vai papildinātas: pārbaudiet tās un saglabājiet.",
+    "rm_nothing_found": "Zonās nekā jauna.",
+    "rm_collapse": "Sakļaut visu",
+    "rm_toggle": "Rādīt vai slēpt {name}",
+    "rm_up": "Uz augšu",
+    "rm_down": "Uz leju",
+    "rm_name": "Nosaukums",
+    "rm_area": "Home Assistant zona",
+    "rm_area_none": "Nav",
+    "rm_name_help": "Nosaukums, ko ziņo putekļsūcējs; zona atrod savas vienības.",
+    "rm_used_by": "Izmanto: {rules}.",
+    "rm_unused": "Neviens noteikums to vēl neizmanto.",
+    "rm_rules_one": "1 noteikums",
+    "rm_rules_other": "Noteikumi: {n}",
+    "rm_pausing_one": "tās diendusas aptur 1 noteikumu",
+    "rm_pausing_other": "tās diendusas aptur noteikumus: {n}",
+    "rm_someone": "Kāds ir",
+    "rm_napping": "Diendusa",
+    "rm_open": "{name} atvērts",
+    "rm_unavailable_one": "1 vienība nav pieejama",
+    "rm_unavailable_other": "Nepieejamas vienības: {n}",
+    "rm_areas_unused": "Home Assistant zonas bez telpas",
+    "rm_other_room": "Cita telpa",
+    "rm_lights": "Gaismas",
+    "rm_openings": "Logi un durvis",
+    "rm_presence": "Klātbūtne un apgaismojums",
+    "rm_devices": "Ierīces",
+    "rm_naps": "Diendusas",
+    "rm_light": "Gaisma",
+    "rm_opening": "Logs vai durvis",
+    "rm_presence_sensor": "Klātbūtnes sensors",
+    "rm_illuminance": "Apgaismojuma sensors",
+    "rm_climate": "Kondicionieris",
+    "rm_nap": "Diendusa",
+    "rm_nap_schedule": "Diendusas grafiks",
+    "rm_nap_from": "No",
+    "rm_nap_to": "Līdz",
+    "rm_nap_days_help": "Nav izvēlēta diena: katru dienu.",
     "remove": "Noņemt",
     "today": "Šodienas izpildes",
     "search": "Meklēt noteikumu vai entītiju",
@@ -1938,7 +2751,47 @@ const HRP_STRINGS = {
     "illuminance": "Φωτεινότητα",
     "naps": "Μεσημεριανός ύπνος",
     "add_room": "Προσθήκη δωματίου",
-    "rooms_help": "Ονόματα δωματίων όπως τα αναφέρει το ρομπότ. Χρησιμοποιούνται από τους κανόνες ρομπότ και παρουσίας.",
+    "rooms_help": "Τι ξέρουν οι κανόνες για κάθε δωμάτιο: φώτα, ανοίγματα, παρουσία και μεσημεριανούς ύπνους.",
+    "rm_discover": "Ανακάλυψη",
+    "rm_discover_help": "Βρίσκει τα δωμάτια των περιοχών σας στο Home Assistant, με τα φώτα, τα ανοίγματα και τους αισθητήρες παρουσίας και φωτεινότητας. Τίποτα δεν αποθηκεύεται πριν τον έλεγχό σας.",
+    "rm_discovered": "Δωμάτια βρέθηκαν ή συμπληρώθηκαν: ελέγξτε τα και αποθηκεύστε.",
+    "rm_nothing_found": "Τίποτα νέο στις περιοχές.",
+    "rm_collapse": "Σύμπτυξη όλων",
+    "rm_toggle": "Εμφάνιση ή απόκρυψη {name}",
+    "rm_up": "Πάνω",
+    "rm_down": "Κάτω",
+    "rm_name": "Όνομα",
+    "rm_area": "Περιοχή Home Assistant",
+    "rm_area_none": "Καμία",
+    "rm_name_help": "Το όνομα που αναφέρει η σκούπα· η περιοχή βρίσκει τις οντότητές της.",
+    "rm_used_by": "Χρησιμοποιείται από {rules}.",
+    "rm_unused": "Κανένας κανόνας δεν το χρησιμοποιεί ακόμη.",
+    "rm_rules_one": "1 κανόνας",
+    "rm_rules_other": "{n} κανόνες",
+    "rm_pausing_one": "οι ύπνοι του παύουν 1 κανόνα",
+    "rm_pausing_other": "οι ύπνοι του παύουν {n} κανόνες",
+    "rm_someone": "Κάποιος",
+    "rm_napping": "Μεσημεριανός ύπνος",
+    "rm_open": "{name} ανοιχτό",
+    "rm_unavailable_one": "1 οντότητα μη διαθέσιμη",
+    "rm_unavailable_other": "{n} οντότητες μη διαθέσιμες",
+    "rm_areas_unused": "Περιοχές Home Assistant χωρίς δωμάτιο",
+    "rm_other_room": "Άλλο δωμάτιο",
+    "rm_lights": "Φώτα",
+    "rm_openings": "Παράθυρα και πόρτες",
+    "rm_presence": "Παρουσία και φωτεινότητα",
+    "rm_devices": "Συσκευές",
+    "rm_naps": "Μεσημεριανοί ύπνοι",
+    "rm_light": "Φως",
+    "rm_opening": "Παράθυρο ή πόρτα",
+    "rm_presence_sensor": "Αισθητήρας παρουσίας",
+    "rm_illuminance": "Αισθητήρας φωτεινότητας",
+    "rm_climate": "Κλιματιστικό",
+    "rm_nap": "Μεσημεριανός ύπνος",
+    "rm_nap_schedule": "Πρόγραμμα ύπνου",
+    "rm_nap_from": "Από",
+    "rm_nap_to": "Έως",
+    "rm_nap_days_help": "Καμία ημέρα: κάθε μέρα.",
     "remove": "Αφαίρεση",
     "today": "Εκτελέσεις σήμερα",
     "search": "Αναζήτηση κανόνα ή οντότητας",
@@ -2031,7 +2884,47 @@ const HRP_STRINGS = {
     "illuminance": "Osvetljenost",
     "naps": "Dremke",
     "add_room": "Dodaj prostoriju",
-    "rooms_help": "Nazivi prostorija onako kako ih robot prijavljuje. Koriste ih pravila robota i prisustva.",
+    "rooms_help": "Šta pravila znaju o svakoj prostoriji: svetla, otvore, prisustvo i dremke.",
+    "rm_discover": "Otkrij",
+    "rm_discover_help": "Pronalazi prostorije vaših Home Assistant zona, sa svetlima, otvorima i senzorima prisustva i osvetljenosti. Ništa se ne čuva pre vaše provere.",
+    "rm_discovered": "Prostorije pronađene ili dopunjene: proverite ih, pa sačuvajte.",
+    "rm_nothing_found": "Ništa novo u zonama.",
+    "rm_collapse": "Skupi sve",
+    "rm_toggle": "Prikaži ili sakrij {name}",
+    "rm_up": "Gore",
+    "rm_down": "Dole",
+    "rm_name": "Naziv",
+    "rm_area": "Home Assistant zona",
+    "rm_area_none": "Nijedna",
+    "rm_name_help": "Naziv koji prijavljuje usisivač; zona pronalazi svoje entitete.",
+    "rm_used_by": "Koristi je {rules}.",
+    "rm_unused": "Još je nijedno pravilo ne koristi.",
+    "rm_rules_one": "1 pravilo",
+    "rm_rules_other": "Pravila: {n}",
+    "rm_pausing_one": "njene dremke pauziraju 1 pravilo",
+    "rm_pausing_other": "njene dremke pauziraju pravila: {n}",
+    "rm_someone": "Neko je tu",
+    "rm_napping": "Dremka",
+    "rm_open": "{name} otvoreno",
+    "rm_unavailable_one": "1 entitet nedostupan",
+    "rm_unavailable_other": "Nedostupni entiteti: {n}",
+    "rm_areas_unused": "Home Assistant zone bez prostorije",
+    "rm_other_room": "Druga prostorija",
+    "rm_lights": "Svetla",
+    "rm_openings": "Prozori i vrata",
+    "rm_presence": "Prisustvo i osvetljenost",
+    "rm_devices": "Uređaji",
+    "rm_naps": "Dremke",
+    "rm_light": "Svetlo",
+    "rm_opening": "Prozor ili vrata",
+    "rm_presence_sensor": "Senzor prisustva",
+    "rm_illuminance": "Senzor osvetljenosti",
+    "rm_climate": "Klima uređaj",
+    "rm_nap": "Dremka",
+    "rm_nap_schedule": "Raspored dremke",
+    "rm_nap_from": "Od",
+    "rm_nap_to": "Do",
+    "rm_nap_days_help": "Nijedan dan: svaki dan.",
     "remove": "Ukloni",
     "today": "Današnja pokretanja",
     "search": "Traži pravilo ili entitet",
@@ -2117,7 +3010,7 @@ class HouseRulesPanel extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this._data = undefined;
-    this._ui = { tab: 'activity', filter: null, editing: null, search: '', jfilter: 'all', rooms: null, settings: null };
+    this._ui = { tab: 'activity', filter: null, editing: null, search: '', jfilter: 'all', rooms: null, settings: null, open: new Set(), secs: new Set() };
   }
 
   set hass(hass) {
@@ -2162,6 +3055,11 @@ class HouseRulesPanel extends HTMLElement {
         this._data = data;
         const y = this._ui.yaml;
         if (y && data?.source?.modified !== before && y.text === y.original) this._ui.yaml = null;
+        // Not under an entity picker being used (a redraw would close it): drawn once it is left.
+        if (this.shadowRoot.activeElement?.closest?.('.picker')) {
+          this._ui.later = true;
+          return;
+        }
         this._render();
       },
       { type: 'house_rules/subscribe' },
@@ -2251,6 +3149,7 @@ class HouseRulesPanel extends HTMLElement {
     else content = this[`tab_${this._ui.tab}`]();
     this.shadowRoot.innerHTML = `<style>${HRP_CSS}${hrs().animCss}</style><div class="page${this._narrow ? ' narrow' : ''}" style="${this.vars()}">${this.top()}<main>${content}</main>${this.dialog()}</div>`;
     this.bind();
+    if (this._ui.tab === 'rooms' && d) this.mountPickers();
     if (keep) {
       const el = this.shadowRoot.getElementById(keep.id);
       if (el) {
@@ -2388,27 +3287,236 @@ class HouseRulesPanel extends HTMLElement {
   }
 
   // ---------- tab: rooms ----------
+  // As on Smart Comfort's Rooms tab: a folding card per room, its sections (filled ones shown, empty ones offered as
+  // "+" chips), Home Assistant entity pickers, the room's live state in its header and the rules that use it.
   tab_rooms() {
-    const rooms = this._ui.rooms || JSON.parse(JSON.stringify(this._data.rooms || {}));
-    this._ui.rooms = rooms;
-    const fields = ['light', 'opening', 'climate', 'presence', 'illuminance', 'naps'];
-    const head = `<tr><th>${this.t('room')}</th>${fields.map((f) => `<th>${this.t(f)}</th>`).join('')}<th></th></tr>`;
-    const rows = Object.entries(rooms)
-      .map(([name, room], i) => {
-        const cells = fields
-          .map((f) => {
-            let v = room[f] ?? '';
-            if (f === 'naps') v = hrpNapsText(v);
-            else if (Array.isArray(v)) v = v.join(', ');
-            const st = (Array.isArray(room[f]) ? room[f][0] : room[f]) && this._hass.states[Array.isArray(room[f]) ? room[f][0] : room[f]];
-            return `<td><input class="cell" id="room-${i}-${f}" data-room="${i}" data-field="${f}" value="${hrpEsc(v)}" placeholder="${f === 'naps' ? '13:30-15:00; schedule.nap_bedroom' : '—'}" aria-label="${hrpEsc(name)} ${this.t(f)}">${st ? `<div class="sub small">${hrpEsc(st.state)}${st.attributes?.unit_of_measurement ? ` ${hrpEsc(st.attributes.unit_of_measurement)}` : ''}</div>` : ''}</td>`;
-          })
-          .join('');
-        return `<tr><td><input class="cell name" id="room-${i}-name" data-room="${i}" data-field="__name" value="${hrpEsc(name)}" aria-label="${this.t('room')}"></td>${cells}<td><button class="rbtn plain" data-remove-room="${i}" aria-label="${this.t('remove')}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></td></tr>`;
+    const rooms = this.draftRooms();
+    const entries = Object.entries(rooms);
+    this._ui.open ||= new Set();
+    this._ui.secs ||= new Set();
+    const unavailable = entries.reduce((n, [, room]) => n + this.roomUnavailable(room).length, 0);
+    const head = `<section class="card pad stack"><div class="row wrap">${this.icon('mdi:floor-plan', 'amber')}<div class="grow" style="flex-basis:220px"><div class="row wrap"><div class="ttl">${this.t('tabs').rooms}</div>${unavailable ? this.pill(this.count('rm_unavailable', unavailable), 'amber') : ''}</div><div class="sub small">${this.t('rooms_help')}</div></div>${this._ui.open.size ? `<button class="btn" data-action="rooms-collapse">${this.t('rm_collapse')}</button>` : ''}<button class="btn primary" data-action="rooms-discover">${this.t('rm_discover')}</button></div><p class="sub small" style="margin:0">${this.t('rm_discover_help')}</p></section>`;
+    const cards = entries.map(([name, room], i) => this.roomCard(name, room, i, entries.length)).join('');
+    const free = this.freeAreas(rooms);
+    const foot = `<section class="card pad row wrap freeareas"><span class="grow sub">${free.length ? this.t('rm_areas_unused') : ''}</span>${free.map((a) => `<button class="chip" data-add-area="${hrpEsc(a.area_id)}">+ ${hrpEsc(a.name)}</button>`).join('')}<button class="chip dashed" data-action="add-room">+ ${this.t('rm_other_room')}</button></section>`;
+    const dirty = JSON.stringify(this.cleanRooms()) !== JSON.stringify(this._data.rooms || {});
+    return `<div class="stack">${head}${cards}${foot}${dirty ? this.saveBar('reset-rooms', 'save-rooms') : ''}</div>`;
+  }
+
+  draftRooms() {
+    this._ui.rooms ||= JSON.parse(JSON.stringify(this._data.rooms || {}));
+    return this._ui.rooms;
+  }
+
+  // The values of a field of a room as a list ("lights" merges `light` and `lights`).
+  roomValues(room, f) {
+    if (f === 'lights') return [room.light, ...[].concat(room.lights || [])].filter((v) => v != null);
+    return [].concat(room[f] ?? []);
+  }
+
+  setRoomValues(room, f, values) {
+    if (f === 'lights') delete room.light;
+    const list = HRP_ROOM_LISTS.includes(f);
+    if (!values.length) delete room[f];
+    else room[f] = list ? values : values[0];
+  }
+
+  roomEntities(room) {
+    const ids = [...this.roomValues(room, 'lights'), ...this.roomValues(room, 'opening'), ...this.roomValues(room, 'presence')];
+    for (const f of ['illuminance', 'climate']) if (room[f]) ids.push(room[f]);
+    for (const nap of room.naps || []) if (typeof nap === 'string') ids.push(nap);
+    return ids.filter(Boolean);
+  }
+
+  roomUnavailable(room) {
+    return this.roomEntities(room).filter((e) => ['unavailable', 'unknown', undefined].includes(this._hass.states[e]?.state));
+  }
+
+  // The rules that use a room: its presence_light rules, the vacuum rules when it has what they read.
+  roomUsers(name, room) {
+    const rules = this._data.raw?.rules || [];
+    const lights = this.roomValues(room, 'lights').length;
+    const openings = this.roomValues(room, 'opening').length;
+    const users = rules.filter(
+      (r) => (r.type === 'presence_light' && r.room === name) || (r.type === 'vacuum_follow' && lights) || (r.type === 'vacuum_guard' && openings),
+    );
+    const pausing = (room.naps || []).length ? rules.filter((r) => [].concat(r.respect || []).includes('nap')).length : 0;
+    return { users, pausing };
+  }
+
+  roomBadges(name, room) {
+    const st = (e) => this._hass.states[e];
+    const out = [];
+    if (this.roomValues(room, 'presence').some((e) => st(e)?.state === 'on')) out.push(this.pill(this.t('rm_someone'), 'blue'));
+    if ((this._data.conditions?.napping || []).includes(name)) out.push(this.pill(this.t('rm_napping'), 'amber'));
+    const open = this.roomValues(room, 'opening').find((e) => st(e)?.state === 'on');
+    if (open) out.push(this.pill(this.t('rm_open', { name: this.friendly(open) }), 'red'));
+    const missing = this.roomUnavailable(room).length;
+    if (missing) out.push(this.pill(this.count('rm_unavailable', missing), 'amber'));
+    return out.join('');
+  }
+
+  friendly(entity) {
+    return this._hass.states[entity]?.attributes?.friendly_name || entity;
+  }
+
+  roomCard(name, room, i, total) {
+    const open = this._ui.open.has(name);
+    const area = this._hass.areas?.[room.area] || Object.values(this._hass.areas || {}).find((a) => a.name.toLowerCase() === name.toLowerCase());
+    const { users, pausing } = this.roomUsers(name, room);
+    const icons = HRP_ROOM_SECTIONS.filter((s) => this.sectionFilled(room, s))
+      .map((s) => {
+        const n = s.fields ? s.fields.reduce((k, f) => k + this.roomValues(room, f.f).filter(Boolean).length, 0) : (room.naps || []).length;
+        return `<span class="ricon" title="${hrpEsc(this.t(`rm_${s.key}`))}"><ha-icon icon="${s.icon}"></ha-icon>${n > 1 ? n : ''}</span>`;
       })
       .join('');
-    const dirty = JSON.stringify(rooms) !== JSON.stringify(this._data.rooms || {});
-    return `<div class="stack"><div class="row wrap"><div class="grow"><div class="ttl">${this.t('tabs').rooms}</div><div class="sub">${this.t('rooms_help')}</div></div><button class="btn" data-action="add-room"><ha-icon icon="mdi:plus" style="--mdc-icon-size:16px"></ha-icon>${this.t('add_room')}</button></div><div class="card scroll"><table>${head}${rows}</table></div>${dirty ? this.saveBar('reset-rooms', 'save-rooms') : ''}</div>`;
+    const count = users.length ? this.count('rm_rules', users.length) : '';
+    const pause = pausing ? this.count('rm_pausing', pausing) : '';
+    const meta = [count, pause].filter(Boolean).join(' · ');
+    const header = `<div class="rhead"><button class="rbtn plain" data-toggle-room="${i}" aria-expanded="${open}" aria-label="${hrpEsc(this.t('rm_toggle', { name }))}"><ha-icon icon="mdi:chevron-${open ? 'down' : 'right'}"></ha-icon></button><ha-icon class="rarea" icon="${hrpEsc(area?.icon || 'mdi:floor-plan')}"></ha-icon><span class="rname">${hrpEsc(name)}</span><span class="rmeta">${this.roomBadges(name, room)}${open ? '' : `<span class="ricons">${icons}</span>`}<span class="sub small">${hrpEsc(meta)}</span></span><span class="racts"><button class="rbtn plain" data-move-room="${i}|-1" ${i ? '' : 'disabled'} aria-label="${this.t('rm_up')}"><ha-icon icon="mdi:arrow-up"></ha-icon></button><button class="rbtn plain" data-move-room="${i}|1" ${i < total - 1 ? '' : 'disabled'} aria-label="${this.t('rm_down')}"><ha-icon icon="mdi:arrow-down"></ha-icon></button><button class="rbtn plain" data-remove-room="${i}" aria-label="${this.t('remove')}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></span></div>`;
+    if (!open) return `<section class="card room">${header}</section>`;
+    const areas = Object.values(this._hass.areas || {}).sort((a, b) => a.name.localeCompare(b.name));
+    const used = users.length
+      ? this.t('rm_used_by', { rules: users.map((r) => `<button class="link" data-edit="${hrpEsc(r.id)}">${hrpEsc(r.name || r.id)}</button>`).join(', ') })
+      : this.t('rm_unused');
+    const fields = `<div class="row wrap rfields"><label class="ffield grow"><span>${this.t('rm_name')}</span><input id="room-${i}-name" data-room-name="${i}" value="${hrpEsc(name)}"></label><label class="ffield grow"><span>${this.t('rm_area')}</span><select id="room-${i}-area" data-room-area="${i}"><option value="">${this.t('rm_area_none')}</option>${areas.map((a) => `<option value="${hrpEsc(a.area_id)}" ${a.area_id === (room.area || area?.area_id) ? 'selected' : ''}>${hrpEsc(a.name)}</option>`).join('')}</select></label></div><p class="sub small rhelp">${this.t('rm_name_help')} ${used}${pausing ? ` · ${hrpEsc(pause)}` : ''}</p>`;
+    const shown = HRP_ROOM_SECTIONS.filter((s) => this.sectionFilled(room, s) || this._ui.secs.has(`${name}|${s.key}`));
+    const empty = HRP_ROOM_SECTIONS.filter((s) => !shown.includes(s));
+    const sections = shown.map((s) => this.roomSection(name, room, i, s)).join('');
+    const chips = empty.length ? `<div class="row wrap chips">${empty.map((s) => `<button class="chip dashed" data-open-sec="${i}|${s.key}">+ ${this.t(`rm_${s.key}`)}</button>`).join('')}</div>` : '';
+    return `<section class="card room open">${header}${fields}${sections}${chips}</section>`;
+  }
+
+  sectionFilled(room, s) {
+    if (s.naps) return Boolean((room.naps || []).length);
+    return s.fields.some((f) => this.roomValues(room, f.f).some(Boolean));
+  }
+
+  roomSection(name, room, i, s) {
+    const key = `${name}|${s.key}`;
+    const folded = this._ui.secs.has(`${key}|folded`);
+    const summary = s.naps
+      ? (room.naps || []).map((n) => (typeof n === 'string' ? this.friendly(n) : `${String(n.start).slice(0, 5)}–${String(n.end).slice(0, 5)}`)).join(', ')
+      : s.fields.flatMap((f) => this.roomValues(room, f.f).filter(Boolean).map((e) => this.friendly(e))).join(', ');
+    const head = `<button class="sechead" data-fold-sec="${i}|${s.key}" aria-expanded="${!folded}"><ha-icon icon="${s.icon}"></ha-icon><span class="grow">${this.t(`rm_${s.key}`)}</span><span class="sub small secsum">${hrpEsc(summary)}</span><ha-icon icon="mdi:chevron-${folded ? 'down' : 'up'}"></ha-icon></button>`;
+    if (folded) return `<div class="sec">${head}</div>`;
+    let body;
+    if (s.naps) {
+      const naps = (room.naps || [])
+        .map((n, k) =>
+          typeof n === 'string'
+            ? `<div class="pickrow"><div class="picker" data-pick="${i}|naps|${k}"></div><button class="rbtn plain" data-del-nap="${i}|${k}" aria-label="${this.t('remove')}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>`
+            : `<div class="pickrow nap"><label class="ffield"><span>${this.t('rm_nap_from')}</span><input type="time" data-nap="${i}|${k}|start" value="${hrpEsc(String(n.start).slice(0, 5))}"></label><label class="ffield"><span>${this.t('rm_nap_to')}</span><input type="time" data-nap="${i}|${k}|end" value="${hrpEsc(String(n.end).slice(0, 5))}"></label><span class="days">${HRP_WEEKDAYS.map((d, j) => `<button class="day ${(n.days || []).includes(d) ? 'on' : ''}" data-nap-day="${i}|${k}|${d}" aria-pressed="${(n.days || []).includes(d)}">${hrpEsc(this.weekday(j))}</button>`).join('')}</span><button class="rbtn plain" data-del-nap="${i}|${k}" aria-label="${this.t('remove')}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>`,
+        )
+        .join('');
+      body = `${naps}<p class="sub small">${this.t('rm_nap_days_help')}</p><div class="row wrap chips"><button class="chip dashed" data-add-nap="${i}|slot">+ ${this.t('rm_nap')}</button><button class="chip dashed" data-add-nap="${i}|entity">+ ${this.t('rm_nap_schedule')}</button></div>`;
+    } else {
+      body = s.fields
+        .map((f) => {
+          const values = this.roomValues(room, f.f);
+          const list = values.length ? values : [''];
+          const pickers = list.map((_, k) => `<div class="pickrow"><div class="picker" data-pick="${i}|${f.f}|${k}"></div></div>`).join('');
+          const add = f.list && values.some(Boolean) ? `<button class="chip dashed" data-add-value="${i}|${f.f}">+ ${this.t(f.label)}</button>` : '';
+          return `<div class="flabel">${this.t(f.label)}</div>${pickers}${add}`;
+        })
+        .join('');
+    }
+    return `<div class="sec">${head}<div class="secbody">${body}</div></div>`;
+  }
+
+  weekday(j) {
+    // 2024-01-01 is a Monday.
+    return new Intl.DateTimeFormat(this._hass?.locale?.language || 'en', { weekday: 'short' }).format(new Date(2024, 0, 1 + j));
+  }
+
+  // After each draw of the Rooms tab: Home Assistant's entity pickers (a text field where there are none).
+  mountPickers() {
+    for (const box of this.shadowRoot.querySelectorAll('.picker[data-pick]')) {
+      const [i, f, k] = box.dataset.pick.split('|');
+      const [name, room] = Object.entries(this._ui.rooms)[Number(i)];
+      const value = f === 'naps' ? room.naps[Number(k)] : this.roomValues(room, f)[Number(k)] || '';
+      const filter = HRP_ROOM_FILTERS[f];
+      const set = (v) => this.roomPick(Number(i), f, Number(k), v);
+      let el;
+      if (customElements.get('ha-selector')) {
+        el = document.createElement('ha-selector');
+        el.hass = this._hass;
+        el.selector = { entity: { filter } };
+        el.value = value;
+        el.addEventListener('value-changed', (ev) => set(ev.detail.value || ''));
+      } else {
+        el = document.createElement('input');
+        el.className = 'cell';
+        el.value = value;
+        el.placeholder = filter.map((x) => x.domain).join(' / ');
+        el.setAttribute('aria-label', `${name} ${this.t(HRP_ROOM_LABELS[f])}`);
+        el.addEventListener('change', () => set(el.value.trim()));
+      }
+      box.append(el);
+    }
+  }
+
+  roomPick(i, f, k, value) {
+    const room = Object.values(this._ui.rooms)[i];
+    if (f === 'naps') {
+      if (value) room.naps[k] = value;
+      else room.naps.splice(k, 1);
+    } else {
+      const values = this.roomValues(room, f);
+      values[k] = value;
+      this.setRoomValues(room, f, values.filter(Boolean));
+    }
+    this._render();
+  }
+
+  // Rooms from the Home Assistant areas: what each area holds, by domain and device class (a room keeps what it has).
+  areaRoom(areaId) {
+    const ents = this._hass.entities || {};
+    const devices = this._hass.devices || {};
+    const room = { area: areaId };
+    const add = (f, e) => {
+      const values = this.roomValues(room, f);
+      if (!values.includes(e)) this.setRoomValues(room, f, [...values, e]);
+    };
+    for (const [e, ent] of Object.entries(ents)) {
+      if (ent.entity_category || ent.hidden) continue;
+      if ((ent.area_id || devices[ent.device_id]?.area_id) !== areaId) continue;
+      const domain = e.split('.')[0];
+      const cls = this._hass.states[e]?.attributes?.device_class;
+      for (const [f, filter] of Object.entries(HRP_ROOM_FILTERS)) {
+        if (f === 'naps') continue;
+        if (!filter.some((x) => x.domain === domain && (!x.device_class || x.device_class.includes(cls)))) continue;
+        if (HRP_ROOM_LISTS.includes(f)) add(f, e);
+        else room[f] ||= e;
+      }
+    }
+    return room;
+  }
+
+  roomOfArea(rooms, area) {
+    return Object.keys(rooms).find((n) => rooms[n].area === area.area_id || n.toLowerCase() === area.name.toLowerCase());
+  }
+
+  freeAreas(rooms) {
+    return Object.values(this._hass.areas || {})
+      .filter((a) => !this.roomOfArea(rooms, a))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Fills a room from its area: new values join, what is set stays.
+  mergeArea(area) {
+    const rooms = this.draftRooms();
+    const found = this.areaRoom(area.area_id);
+    const name = this.roomOfArea(rooms, area) || area.name;
+    const room = (rooms[name] ||= {});
+    room.area ||= area.area_id;
+    for (const f of Object.keys(HRP_ROOM_FILTERS)) {
+      if (f === 'naps') continue;
+      const before = this.roomValues(room, f);
+      const merged = [...new Set([...before, ...this.roomValues(found, f)])];
+      if (merged.length > before.length) this.setRoomValues(room, f, merged);
+    }
+    return name;
   }
 
   // ---------- tab: journal ----------
@@ -2590,13 +3698,7 @@ class HouseRulesPanel extends HTMLElement {
       this._ui.editing.text = HRP_TEMPLATES[el.value];
       this._render();
     });
-    on('[data-room]', 'input', (el) => this.roomInput(el));
-    on('[data-remove-room]', 'click', (el) => {
-      const entries = Object.entries(this._ui.rooms);
-      entries.splice(Number(el.dataset.removeRoom), 1);
-      this._ui.rooms = Object.fromEntries(entries);
-      this._render();
-    });
+    this.bindRooms(on);
     on('[data-prop]', 'change', (el) => {
       this._ui.proposals[Number(el.dataset.prop)].checked = el.checked;
       this._render();
@@ -2666,9 +3768,23 @@ class HouseRulesPanel extends HTMLElement {
           await this.saveRule();
           break;
         case 'add-room': {
+          const rooms = this.draftRooms();
           let n = 1;
-          while (this._ui.rooms[`Room ${n}`]) n++;
-          this._ui.rooms[`Room ${n}`] = {};
+          while (rooms[`${this.t('room')} ${n}`]) n++;
+          rooms[`${this.t('room')} ${n}`] = {};
+          this._ui.open.add(`${this.t('room')} ${n}`);
+          this._render();
+          break;
+        }
+        case 'rooms-collapse':
+          this._ui.open.clear();
+          this._render();
+          break;
+        case 'rooms-discover': {
+          const areas = Object.values(this._hass.areas || {});
+          const before = JSON.stringify(this.draftRooms());
+          for (const area of areas) this.mergeArea(area);
+          this.toast(before === JSON.stringify(this._ui.rooms) ? this.t('rm_nothing_found') : this.t('rm_discovered'));
           this._render();
           break;
         }
@@ -2768,34 +3884,121 @@ class HouseRulesPanel extends HTMLElement {
     }
   }
 
-  roomInput(el) {
-    const entries = Object.entries(this._ui.rooms);
-    const i = Number(el.dataset.room);
-    const [name, room] = entries[i];
-    if (el.dataset.field === '__name') {
-      entries[i] = [el.value, room];
-    } else {
-      const value = el.value.trim();
-      if (!value) delete room[el.dataset.field];
-      else if (el.dataset.field === 'naps') room.naps = hrpNapsParse(value);
-      else if (['opening', 'presence'].includes(el.dataset.field) && value.includes(','))
-        room[el.dataset.field] = value
-          .split(',')
-          .map((v) => v.trim())
-          .filter(Boolean);
-      else room[el.dataset.field] = value;
+  bindRooms(on) {
+    const rooms = () => this.draftRooms();
+    const at = (i) => Object.entries(rooms())[Number(i)];
+    const redraw = () => this._render();
+    on('[data-toggle-room]', 'click', (el) => {
+      const [name] = at(el.dataset.toggleRoom);
+      if (!this._ui.open.delete(name)) this._ui.open.add(name);
+      redraw();
+    });
+    on('[data-remove-room]', 'click', (el) => {
+      const entries = Object.entries(rooms());
+      const [[name]] = entries.splice(Number(el.dataset.removeRoom), 1);
+      this._ui.open.delete(name);
+      this._ui.rooms = Object.fromEntries(entries);
+      redraw();
+    });
+    on('[data-move-room]', 'click', (el) => {
+      const [i, step] = el.dataset.moveRoom.split('|').map(Number);
+      const entries = Object.entries(rooms());
+      const [item] = entries.splice(i, 1);
+      entries.splice(i + step, 0, item);
+      this._ui.rooms = Object.fromEntries(entries);
+      redraw();
+    });
+    on('[data-room-name]', 'change', (el) => {
+      const i = Number(el.dataset.roomName);
+      const entries = Object.entries(rooms());
+      const [old, room] = entries[i];
+      const name = el.value.trim();
+      if (!name || name === old || rooms()[name]) return redraw();
       entries[i] = [name, room];
-    }
-    this._ui.rooms = Object.fromEntries(entries);
-    const dirtyBtn = this.shadowRoot.querySelector('[data-action="save-rooms"]');
-    if (!dirtyBtn) this._render();
+      this._ui.rooms = Object.fromEntries(entries);
+      if (this._ui.open.delete(old)) this._ui.open.add(name);
+      redraw();
+    });
+    on('[data-room-area]', 'change', (el) => {
+      const [, room] = at(el.dataset.roomArea);
+      if (el.value) room.area = el.value;
+      else delete room.area;
+      redraw();
+    });
+    on('[data-open-sec]', 'click', (el) => {
+      const [i, key] = el.dataset.openSec.split('|');
+      const [name, room] = at(i);
+      this._ui.secs.add(`${name}|${key}`);
+      if (key === 'naps' && !(room.naps || []).length) room.naps = [{ start: '13:30', end: '15:00' }];
+      redraw();
+    });
+    on('[data-fold-sec]', 'click', (el) => {
+      const [i, key] = el.dataset.foldSec.split('|');
+      const id = `${at(i)[0]}|${key}|folded`;
+      if (!this._ui.secs.delete(id)) this._ui.secs.add(id);
+      redraw();
+    });
+    on('[data-add-value]', 'click', (el) => {
+      const [i, f] = el.dataset.addValue.split('|');
+      const [, room] = at(i);
+      this.setRoomValues(room, f, [...this.roomValues(room, f), '']);
+      redraw();
+    });
+    on('[data-add-nap]', 'click', (el) => {
+      const [i, kind] = el.dataset.addNap.split('|');
+      const [, room] = at(i);
+      room.naps = [...(room.naps || []), kind === 'slot' ? { start: '13:30', end: '15:00' } : ''];
+      redraw();
+    });
+    on('[data-del-nap]', 'click', (el) => {
+      const [i, k] = el.dataset.delNap.split('|');
+      const [name, room] = at(i);
+      room.naps.splice(Number(k), 1);
+      if (!room.naps.length) {
+        delete room.naps;
+        this._ui.secs.delete(`${name}|naps`);
+      }
+      redraw();
+    });
+    on('[data-nap]', 'change', (el) => {
+      const [i, k, part] = el.dataset.nap.split('|');
+      at(i)[1].naps[Number(k)][part] = el.value;
+      redraw();
+    });
+    on('[data-nap-day]', 'click', (el) => {
+      const [i, k, day] = el.dataset.napDay.split('|');
+      const nap = at(i)[1].naps[Number(k)];
+      const days = new Set(nap.days || []);
+      if (!days.delete(day)) days.add(day);
+      if (days.size) nap.days = HRP_WEEKDAYS.filter((d) => days.has(d));
+      else delete nap.days;
+      redraw();
+    });
+    on('[data-add-area]', 'click', (el) => {
+      const area = this._hass.areas?.[el.dataset.addArea];
+      if (!area) return;
+      this._ui.open.add(this.mergeArea(area));
+      redraw();
+    });
+    on('.picker', 'focusout', () => {
+      if (this._ui.later) {
+        this._ui.later = false;
+        setTimeout(redraw, 0);
+      }
+    });
   }
 
   cleanRooms() {
     const out = {};
     for (const [name, room] of Object.entries(this._ui.rooms || {})) {
       if (!name.trim()) continue;
-      out[name.trim()] = Object.fromEntries(Object.entries(room).filter(([, v]) => v !== '' && v != null));
+      const clean = {};
+      for (const [k, v] of Object.entries(room)) {
+        const value = Array.isArray(v) ? v.filter((x) => x !== '' && x != null) : v;
+        if (value === '' || value == null || (Array.isArray(value) && !value.length)) continue;
+        clean[k] = value;
+      }
+      out[name.trim()] = clean;
     }
     return out;
   }
@@ -2844,6 +4047,42 @@ const HRP_CSS = `
   h2 { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); margin: 0 0 8px; }
   section { display: flex; flex-direction: column; gap: 8px; }
   .stack { display: flex; flex-direction: column; gap: 16px; }
+  /* Rooms tab: a folding card per room and its sections, as on Smart Comfort */
+  .room { padding: 6px 16px; display: flex; flex-direction: column; }
+  .room.open { padding-bottom: 16px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 35%, transparent); }
+  .rhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 52px; }
+  .rarea { --mdc-icon-size: 22px; color: var(--primary-color); }
+  .rname { font-size: 17px; font-weight: 600; }
+  .rmeta { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+  .racts { display: inline-flex; flex: none; margin-left: auto; }
+  @media (max-width: 600px) {
+    .rmeta { order: 3; flex-basis: 100%; padding: 0 0 8px 40px; }
+    .card.freeareas > .grow { flex-basis: 100%; }
+  }
+  .ricons { display: inline-flex; gap: 8px; color: var(--secondary-text-color); font-size: 12px; }
+  .ricon { display: inline-flex; align-items: center; gap: 2px; --mdc-icon-size: 16px; }
+  .rfields { gap: 12px; margin-top: 4px; }
+  .ffield { display: flex; flex-direction: column; gap: 4px; min-width: 200px; font-size: 12px; color: var(--secondary-text-color); }
+  .ffield input, .ffield select { font: inherit; font-size: 15px; height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
+  .rhelp { margin: 8px 0 4px; }
+  .rhelp .link, .room .link { padding: 0; font-size: 12px; }
+  .sec { border-top: 1px solid var(--divider-color); }
+  .sechead { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0; border: 0; background: none; color: var(--primary-text-color); font-family: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; --mdc-icon-size: 20px; }
+  .sechead > ha-icon:first-child { color: var(--primary-color); }
+  .secsum { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
+  .secbody { display: flex; flex-direction: column; gap: 8px; padding: 0 0 12px 32px; }
+  .flabel { font-size: 13px; color: var(--secondary-text-color); margin-top: 4px; }
+  .pickrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .picker { flex: 1 1 260px; min-width: 0; }
+  .picker > .cell { width: 100%; }
+  .pickrow.nap .ffield { min-width: 120px; }
+  .days { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+  .day { min-width: 40px; height: 32px; border-radius: 16px; border: 1px solid var(--divider-color); background: transparent; color: var(--primary-text-color); font-family: inherit; font-size: 12px; cursor: pointer; }
+  .day.on { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-primary-color, #fff); }
+  .chip.dashed { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 45%, transparent); color: var(--primary-color); }
+  .room .chips { padding-top: 12px; border-top: 1px solid var(--divider-color); }
+  .secbody .chip.dashed { align-self: flex-start; }
+  .card.freeareas { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; box-shadow: none; border: 1px dashed var(--divider-color); }
   .savebar { position: sticky; bottom: 12px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 14px; border-radius: 12px; background: var(--ha-card-background, var(--card-background-color, #fff)); box-shadow: 0 4px 16px rgba(0, 0, 0, .18); border: 1px solid color-mix(in srgb, var(--primary-color) 40%, transparent); }
   .stack > .savebar { margin-top: 0; }
   .savebar .grow { font-size: 14px; font-weight: 500; }
@@ -2886,6 +4125,7 @@ const HRP_CSS = `
   .btn[disabled] { opacity: .5; cursor: default; }
   .rbtn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--divider-color); background: color-mix(in srgb, var(--card-background-color) 70%, transparent); color: var(--primary-text-color); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: none; }
   .rbtn.plain { border: 0; background: transparent; }
+  .rbtn[disabled] { opacity: .35; cursor: default; }
   .rbtn ha-icon { --mdc-icon-size: 18px; }
   .banner { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 16px; border-radius: 14px; background: var(--hr-red-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hr-red) 35%, transparent); }
   .note { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--primary-color) 14%, transparent); font-size: 13px; }

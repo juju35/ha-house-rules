@@ -768,3 +768,10 @@ rules:
     hass.states.async_set("schedule.nap_bedroom", "on")
     await hass.async_block_till_done()
     assert [c.data["entity_id"] for c in calls["light.turn_off"]] == ["light.hallway"]
+
+
+async def test_room_area_key(hass: HomeAssistant, calls):
+    # The Rooms tab writes the room's Home Assistant area: accepted, and nothing else changes.
+    manager = await setup(hass, "rooms:\n  Hall: {lights: [light.hall], area: hall}\n")
+    assert manager.rooms["Hall"]["area"] == "hall"
+    assert not manager.errors

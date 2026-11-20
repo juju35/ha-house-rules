@@ -84,6 +84,20 @@ ICONS = {
     "shield-home-outline": "M12 1L3 5V11C3 16.5 6.8 21.7 12 23C17.2 21.7 21 16.5 21 11V5L12 1M19 11C19 15.5 16 19.7 12 20.9C8 19.7 5 15.6 5 11V6.3L12 3.2L19 6.3V11M12 6.5L7 11H8.5V15H15.5V11H17L12 6.5Z",
     "timer-outline": "M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M19.03,7.39L20.45,5.97C20,5.46 19.55,5 19.04,4.56L17.62,6C16.07,4.74 14.12,4 12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22C17,22 21,17.97 21,13C21,10.88 20.26,8.93 19.03,7.39M11,14H13V8H11M15,1H9V3H15V1Z",
     "water-alert-outline": "M12 3.25C12 3.25 6 10 6 14C6 17.32 8.69 20 12 20C15.31 20 18 17.32 18 14C18 10 12 3.25 12 3.25M12 18C9.79 18 8 16.21 8 14C8 11.96 10.04 8.96 12 6.43C13.96 8.96 16 11.96 16 14C16 16.21 14.21 18 12 18M20 7H22V13H20V7M20 15H22V17H20V15Z",
+    "chevron-right": "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
+    "arrow-up": "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z",
+    "arrow-down": "M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z",
+    "floor-plan": "M10,5V10H9V5H5V13H9V12H10V17H9V14H5V19H12V17H13V19H19V17H21V21H3V3H21V15H19V10H13V15H12V9H19V5H10Z",
+    "lightbulb-outline": "M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z",
+    "window-closed-variant": "M21 20V2H3V20H1V23H23V20M19 4V11H13V4M5 4H11V11H5M5 20V13H11V20M13 20V13H19V20Z",
+    "air-conditioner": "M6.59,0.66C8.93,-1.15 11.47,1.06 12.04,4.5C12.47,4.5 12.89,4.62 13.27,4.84C13.79,4.24 14.25,3.42 14.07,2.5C13.65,0.35 16.06,-1.39 18.35,1.58C20.16,3.92 17.95,6.46 14.5,7.03C14.5,7.46 14.39,7.89 14.16,8.27C14.76,8.78 15.58,9.24 16.5,9.06C18.63,8.64 20.38,11.04 17.41,13.34C15.07,15.15 12.53,12.94 11.96,9.5C11.53,9.5 11.11,9.37 10.74,9.15C10.22,9.75 9.75,10.58 9.93,11.5C10.35,13.64 7.94,15.39 5.65,12.42C3.83,10.07 6.05,7.53 9.5,6.97C9.5,6.54 9.63,6.12 9.85,5.74C9.25,5.23 8.43,4.76 7.5,4.94C5.37,5.36 3.62,2.96 6.59,0.66M5,16H7A2,2 0 0,1 9,18V24H7V22H5V24H3V18A2,2 0 0,1 5,16M5,18V20H7V18H5M12.93,16H15L12.07,24H10L12.93,16M18,16H21V18H18V22H21V24H18A2,2 0 0,1 16,22V18A2,2 0 0,1 18,16Z",
+    "weather-night": "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z",
+    "silverware-fork-knife": "M11,9H9V2H7V9H5V2H3V9C3,11.12 4.66,12.84 6.75,12.97V22H9.25V12.97C11.34,12.84 13,11.12 13,9V2H11V9M16,6V14H18.5V22H21V2C18.24,2 16,4.24 16,6Z",
+    "sofa": "M12.5 7C12.5 5.89 13.39 5 14.5 5H18C19.1 5 20 5.9 20 7V9.16C18.84 9.57 18 10.67 18 11.97V14H12.5V7M6 11.96V14H11.5V7C11.5 5.89 10.61 5 9.5 5H6C4.9 5 4 5.9 4 7V9.15C5.16 9.56 6 10.67 6 11.96M20.66 10.03C19.68 10.19 19 11.12 19 12.12V15H5V12C5 10.9 4.11 10 3 10S1 10.9 1 12V17C1 18.1 1.9 19 3 19V21H5V19H19V21H21V19C22.1 19 23 18.1 23 17V12C23 10.79 21.91 9.82 20.66 10.03Z",
+    "bed": "M19,7H11V14H3V5H1V20H3V17H21V20H23V11A4,4 0 0,0 19,7M7,13A3,3 0 0,0 10,10A3,3 0 0,0 7,7A3,3 0 0,0 4,10A3,3 0 0,0 7,13Z",
+    "desk": "M3 6H21C21.55 6 22 6.45 22 7C22 7.55 21.55 8 21 8V19H19V17H15V19H13V8H5V19H3V8C2.45 8 2 7.55 2 7C2 6.45 2.45 6 3 6M16 10.5V11H18V10.5C18 10.22 17.78 10 17.5 10H16.5C16.22 10 16 10.22 16 10.5M16 14.5V15H18V14.5C18 14.22 17.78 14 17.5 14H16.5C16.22 14 16 14.22 16 14.5Z",
+    "door": "M8,3C6.89,3 6,3.89 6,5V21H18V5C18,3.89 17.11,3 16,3H8M8,5H16V19H8V5M13,11V13H15V11H13Z",
+    "shower": "M21,14V15C21,16.91 19.93,18.57 18.35,19.41L19,22H17L16.5,20C16.33,20 16.17,20 16,20H8C7.83,20 7.67,20 7.5,20L7,22H5L5.65,19.41C4.07,18.57 3,16.91 3,15V14H2V12H20V5A1,1 0 0,0 19,4C18.5,4 18.12,4.34 18,4.79C18.63,5.33 19,6.13 19,7H13A3,3 0 0,1 16,4C16.06,4 16.11,4 16.17,4C16.58,2.84 17.69,2 19,2A3,3 0 0,1 22,5V14H21V14M19,14H5V15A3,3 0 0,0 8,18H16A3,3 0 0,0 19,15V14Z",
 }
 
 # Stand-ins for Home Assistant's <ha-icon> (MDI paths above, the "house-rules" icon set through window.customIcons
@@ -106,6 +120,22 @@ customElements.define("ha-icon", class extends HTMLElement {
     if (set !== "mdi" && window.customIcons?.[set]) path = (await window.customIcons[set].getIcon(icon)).path;
     // As Home Assistant draws it: <ha-icon> left inline, its icon an inline-flex box on the line's middle
     this.innerHTML = '<span style="display:inline-flex;vertical-align:middle;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px)"><svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;fill:currentColor"><path d="' + path + '"/></svg></span>';
+  }
+});
+// Home Assistant's entity picker, as drawn when filled: the entity's icon, name and area.
+customElements.define("ha-selector", class extends HTMLElement {
+  set value(v) { this._value = v; this._draw(); }
+  get value() { return this._value; }
+  connectedCallback() { this._draw(); }
+  _draw() {
+    const st = this.hass?.states?.[this._value];
+    const area = this.hass?.areas?.[this.hass?.entities?.[this._value]?.area_id]?.name || "";
+    Object.assign(this.style, { display: "block", borderRadius: "10px 10px 0 0", background: "var(--secondary-background-color, #f3f3f3)",
+      borderBottom: "1px solid var(--secondary-text-color)", padding: "8px 14px", minHeight: "40px", boxSizing: "border-box" });
+    const name = st?.attributes?.friendly_name || this._value || "";
+    this.innerHTML = name
+      ? '<div style="font-size:15px;color:var(--primary-text-color)">' + name + '</div><div style="font-size:12px;color:var(--secondary-text-color)">' + area + '</div>'
+      : '<div style="font-size:15px;line-height:24px;color:var(--secondary-text-color)">Entity</div>';
   }
 });
 customElements.define("ha-card", class extends HTMLElement {
@@ -143,6 +173,24 @@ ENTITIES = {
     "sensor.office_illuminance": ("Office illuminance", "240"),
 }
 UNITS = {"sensor.hallway_illuminance": "lx", "sensor.office_illuminance": "lx"}
+DEVICE_CLASSES = {
+    "binary_sensor.kitchen_window": "window",
+    "binary_sensor.living_room_window": "window",
+    "binary_sensor.bedroom_window": "window",
+    "binary_sensor.hallway_motion": "motion",
+    "binary_sensor.office_motion": "motion",
+    "sensor.hallway_illuminance": "illuminance",
+    "sensor.office_illuminance": "illuminance",
+}
+# Home Assistant areas (the Rooms tab's Discover and area pickers); the bathroom has no room yet.
+AREAS = {
+    "kitchen": {"area_id": "kitchen", "name": "Kitchen", "icon": "mdi:silverware-fork-knife"},
+    "living_room": {"area_id": "living_room", "name": "Living room", "icon": "mdi:sofa"},
+    "bedroom": {"area_id": "bedroom", "name": "Bedroom", "icon": "mdi:bed"},
+    "office": {"area_id": "office", "name": "Office", "icon": "mdi:desk"},
+    "hallway": {"area_id": "hallway", "name": "Hallway", "icon": "mdi:door"},
+    "bathroom": {"area_id": "bathroom", "name": "Bathroom", "icon": "mdi:shower"},
+}
 
 ROOMS = {
     "Kitchen": {"light": "light.kitchen", "opening": "binary_sensor.kitchen_window"},
@@ -166,8 +214,17 @@ ROOMS = {
         "light": "light.hallway",
         "presence": "binary_sensor.hallway_motion",
         "illuminance": "sensor.hallway_illuminance",
+        "area": "hallway",
     },
 }
+# The rules' configuration the Rooms tab reads (which rules use a room).
+RAW_RULES = [
+    {"id": "vacuum_lights", "type": "vacuum_follow", "name": "Vacuum lights"},
+    {"id": "vacuum_guard", "type": "vacuum_guard", "name": "Vacuum guard"},
+    {"id": "hallway_presence", "type": "presence_light", "name": "Hallway presence", "room": "Hallway"},
+    {"id": "office_presence", "type": "presence_light", "name": "Office presence", "room": "Office"},
+    {"id": "garage_chime", "type": "sensor_chime", "name": "Garage door chime", "respect": ["nap"]},
+]
 
 
 def rule(rid, rtype, name, state, detail="", last_run=None, **attributes):
@@ -381,6 +438,7 @@ def snapshot(rules=None):
         "rules": rules,
         "errors": {},
         "rooms": ROOMS,
+        "raw": {"rooms": ROOMS, "rules": RAW_RULES},
         "settings": SETTINGS,
         "timers": timers,
         "alerts": alerts,
@@ -399,12 +457,19 @@ def hass_data(snap):
             "attributes": {
                 "friendly_name": name,
                 **({"unit_of_measurement": UNITS[entity_id]} if entity_id in UNITS else {}),
+                **({"device_class": DEVICE_CLASSES[entity_id]} if entity_id in DEVICE_CLASSES else {}),
             },
         }
         for entity_id, (name, state) in ENTITIES.items()
     }
+    entities = {e: {"entity_id": e, "area_id": e.split(".")[1].rsplit("_", 1)[0]} for e in ENTITIES}
+    for e in entities.values():
+        if e["area_id"] not in AREAS:
+            e["area_id"] = e["entity_id"].split(".")[1]
     return {
         "states": states,
+        "areas": AREAS,
+        "entities": entities,
         "snapshot": snap,
         "rule_yaml": RULE_YAML,
         "yaml": {
@@ -421,7 +486,7 @@ def hass_data(snap):
 # A hass object as Home Assistant gives it: states, locale, dark mode, and a connection whose commands answer with the
 # mock data (the panel and the cards share one subscription).
 HASS = """(data, dark) => ({
-    states: data.states, language: "en", locale: { language: "en" }, themes: { darkMode: dark },
+    states: data.states, areas: data.areas, entities: data.entities, devices: {}, language: "en", locale: { language: "en" }, themes: { darkMode: dark },
     callService: async () => {},
     connection: {
         subscribeMessage: (callback) => {
@@ -470,7 +535,7 @@ SHOTS = [
     {"file": "panel-activity", "tab": "activity"},
     {"file": "panel-rules", "tab": "rules"},
     {"file": "panel-rule-edit", "tab": "rules", "clicks": ['[data-edit="kitchen_leak"]']},
-    {"file": "panel-rooms", "tab": "rooms"},
+    {"file": "panel-rooms", "tab": "rooms", "clicks": ['[data-toggle-room="4"]']},
     {"file": "panel-journal", "tab": "journal"},
     {"file": "panel-yaml", "tab": "yaml"},
     {"file": "panel-settings", "tab": "settings", "clicks": ['[data-action="analyze"]']},
