@@ -30,6 +30,61 @@ The configuration lives in **`/config/house_rules.yaml`, edited both ways**: in 
 - **Sidebar panel** with its emblem and a count badge (alerts in red, else running timers)
 - **Cards**: overview (full and mini), timers, activity
 
+## Screenshots
+
+### Panel
+
+| Activity tab: alerts in progress, timers and every rule at a glance | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-activity.png" alt="Activity tab: alerts in progress, timers and every rule at a glance" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-activity-dark.png" alt="Activity tab: alerts in progress, timers and every rule at a glance, dark mode" width="700"> |
+
+| Rules tab: rules by type, test, snooze, enable | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rules.png" alt="Rules tab: rules by type, test, snooze, enable" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rules-dark.png" alt="Rules tab: rules by type, test, snooze, enable, dark mode" width="700"> |
+
+| Editing a rule as YAML from the Rules tab | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rule-edit.png" alt="Editing a rule as YAML from the Rules tab" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rule-edit-dark.png" alt="Editing a rule as YAML from the Rules tab, dark mode" width="700"> |
+
+| Rooms tab: lights, openings, air conditioners, presence and light level | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rooms.png" alt="Rooms tab: lights, openings, air conditioners, presence and light level" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-rooms-dark.png" alt="Rooms tab: lights, openings, air conditioners, presence and light level, dark mode" width="700"> |
+
+| Journal tab: what the rules did, by day | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-journal.png" alt="Journal tab: what the rules did, by day" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-journal-dark.png" alt="Journal tab: what the rules did, by day, dark mode" width="700"> |
+
+| YAML tab: the whole house_rules.yaml, editable | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-yaml.png" alt="YAML tab: the whole house_rules.yaml, editable" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-yaml-dark.png" alt="YAML tab: the whole house_rules.yaml, editable, dark mode" width="700"> |
+
+| Settings tab: configuration source, global conditions and import | Dark mode |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-settings.png" alt="Settings tab: configuration source, global conditions and import" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-settings-dark.png" alt="Settings tab: configuration source, global conditions and import, dark mode" width="700"> |
+
+### Cards
+
+| Light | Dark |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card.png" alt="house-rules-card" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-dark.png" alt="house-rules-card, dark mode" width="368"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-mini.png" alt="house-rules-mini-card" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-mini-dark.png" alt="house-rules-mini-card, dark mode" width="368"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-mini-full.png" alt="house-rules-mini-card, expanded" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-mini-full-dark.png" alt="house-rules-mini-card, expanded, dark mode" width="368"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-timers.png" alt="house-rules-timers-card" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-timers-dark.png" alt="house-rules-timers-card, dark mode" width="368"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-activity.png" alt="house-rules-activity-card" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/card-activity-dark.png" alt="house-rules-activity-card, dark mode" width="368"> |
+
+### Illustrated header
+
+The header shows one object per configured family of rules (plugs, lights, robot vacuum, lock, chime, appliances, leak), coloured by the worst state of its rules. Each state is animated:
+
+| State | Light | Dark |
+|---|---|---|
+| Leak alert: the drop blinks. | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-leak.gif" alt="Header, leak" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-leak-dark.gif" alt="Header, leak, dark mode" width="368"> |
+| Lock alert: the lock blinks. | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-lock.gif" alt="Header, lock" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-lock-dark.gif" alt="Header, lock, dark mode" width="368"> |
+| A lamp lit by a rule glows. | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-light.gif" alt="Header, light" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-light-dark.gif" alt="Header, light, dark mode" width="368"> |
+| The robot vacuum rolls while it is cleaning. | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-vacuum.gif" alt="Header, vacuum" width="368"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/header-vacuum-dark.gif" alt="Header, vacuum, dark mode" width="368"> |
+
+The screenshots are generated with mock data by `scripts/screenshots.py`; the Screenshots workflow refreshes them on each pull request.
+
 ## Prerequisites
 
 - Home Assistant 2024.12 or newer
