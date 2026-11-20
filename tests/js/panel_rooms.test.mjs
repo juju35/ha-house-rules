@@ -114,3 +114,14 @@ test('lights merge light and lights; editing them writes lights only', () => {
   el.setRoomValues(room, 'climate', ['climate.a']);
   assert.equal(room.climate, 'climate.a');
 });
+
+test('a folded room section shows the charter chevron: right when folded (down when open)', () => {
+  const el = panel({ Hall: { lights: ['light.hall'] } });
+  // The cards module shares its helpers with the panel (it is loaded first in Home Assistant).
+  window.__houseRulesShared ||= { esc: (t) => String(t ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`) };
+  el._ui.secs = new Set(['Hall|lights|folded']);
+  const folded = el.roomSection('Hall', { lights: ['light.hall'] }, 0, { key: 'lights', icon: 'mdi:lightbulb', fields: [{ f: 'lights' }] });
+  assert.match(folded, /aria-expanded="false"/);
+  assert.match(folded, /mdi:chevron-right/);
+  assert.doesNotMatch(folded, /mdi:chevron-(up|down)/);
+});
