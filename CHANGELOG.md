@@ -7,8 +7,8 @@
   - several sensors (`sensors`, or a list in the room's `presence`): someone is there while one of them is on;
   - `on_after`: a presence must last that long before the lights turn on (someone passing by doesn't count);
   - `transition`: fade when the lights turn on and off;
-  - `slots`: per time slot (and days), some lights kept off, or turned on at a brightness and colour, with their own
-    delay before off;
+  - `slots`: per time slot (and days) — or `during_naps: true`, while a room of the house has its nap — some lights
+    kept off, or turned on at a brightness and colour, with their own delay before off;
   - `lights`: the lights of the rule, other rooms' included (default: the room's);
   - a light turned off by hand while someone is there stays off until the room is empty; nothing is turned on while a
     light of the room is already on by hand.

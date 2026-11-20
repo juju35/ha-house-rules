@@ -45,19 +45,33 @@ NAP_SLOT = vol.Schema(
     }
 )
 NAP = vol.Any(cv.entity_id, NAP_SLOT)
-# A time slot of presence lights: some lights (all when none) kept off, or turned on at a brightness / colour, with
-# their own delay before off. The first slot that applies to a light decides.
-SLOT = vol.Schema(
-    {
-        vol.Required("start"): TIME,
-        vol.Required("end"): TIME,
-        vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
-        vol.Optional("lights"): ENTITIES,
-        vol.Optional("off", default=False): cv.boolean,
-        vol.Optional("brightness"): PERCENT,
-        vol.Optional("color"): RGB,
-        vol.Optional("off_delay"): DURATION,
-    }
+
+
+def _slot_when(value: dict[str, Any]) -> dict[str, Any]:
+    """A slot has its hours, or applies during the naps of the house (`during_naps`)."""
+    if not value.get("during_naps") and not ("start" in value and "end" in value):
+        raise vol.Invalid("a slot needs start and end, or during_naps: true")
+    return value
+
+
+# A time slot of presence lights - or `during_naps: true`, while a room of the house has its nap: some lights (all
+# when none) kept off, or turned on at a brightness / colour, with their own delay before off. The first slot that
+# applies to a light decides.
+SLOT = vol.All(
+    vol.Schema(
+        {
+            vol.Optional("start"): TIME,
+            vol.Optional("end"): TIME,
+            vol.Optional("during_naps", default=False): cv.boolean,
+            vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
+            vol.Optional("lights"): ENTITIES,
+            vol.Optional("off", default=False): cv.boolean,
+            vol.Optional("brightness"): PERCENT,
+            vol.Optional("color"): RGB,
+            vol.Optional("off_delay"): DURATION,
+        }
+    ),
+    _slot_when,
 )
 
 

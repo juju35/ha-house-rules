@@ -404,7 +404,7 @@ Presence in the room turns its lights on when it is dark (below `dark_below`, wi
 | `windows` | always | Time windows when the rule turns lights on |
 | `brightness` | light's own | 1–100 % |
 | `brightness_entity` | none | A sensor or number giving the brightness in % (wins over `brightness`) |
-| `slots` | none | `start`, `end`, optional `days` (`mon` … `sun`) and `lights`, then `off: true`, or `brightness` / `color` (RGB), and optionally `off_delay` |
+| `slots` | none | `start` and `end` — or `during_naps: true`: while a room of the house has its nap, the hours following the naps — optional `days` (`mon` … `sun`) and `lights`, then `off: true`, or `brightness` / `color` (RGB), and optionally `off_delay` |
 | `not_during_naps` | none | Lights not turned on while a room of the house has its nap (`rooms[].naps`); `true` for all of the rule's lights |
 
 ```yaml
@@ -422,6 +422,7 @@ Presence in the room turns its lights on when it is dark (below `dark_below`, wi
     - {start: "20:00", end: "09:00", lights: [light.hallway_night_light], brightness: 30, color: [0, 0, 255]}
     - {start: "20:00", end: "09:00", lights: [light.hallway], off: true}
     - {start: "18:00", end: "23:00", lights: [light.bathroom], off_delay: "00:10:00"}
+    - {during_naps: true, lights: [light.hallway_night_light], brightness: 10}   # follows the naps
 ```
 
 #### `lock_guard` — lock and alarm

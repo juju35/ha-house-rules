@@ -239,7 +239,7 @@ class PresenceLight(Rule):
         return self.cfg.get("brightness")
 
     def slot(self, light: str) -> dict[str, Any] | None:
-        """The first slot that applies to `light` now."""
+        """The first slot that applies to `light` now (`during_naps`: while a room of the house has its nap)."""
         from ..manager import in_window
 
         now = dt_util.now()
@@ -249,7 +249,7 @@ class PresenceLight(Rule):
                 continue
             if slot.get("lights") and light not in slot["lights"]:
                 continue
-            if in_window(now, slot["start"], slot["end"]):
+            if bool(self.manager.napping()) if slot.get("during_naps") else in_window(now, slot["start"], slot["end"]):
                 return slot
         return None
 

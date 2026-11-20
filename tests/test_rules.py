@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
@@ -16,6 +17,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.house_rules.const import DOMAIN
+from custom_components.house_rules.schema import SLOT
 
 SERVICES = [
     ("switch", "turn_on"),
@@ -710,3 +712,33 @@ rooms:
     hass.states.async_set("schedule.nap_bedroom", "off")
     hass.states.async_set("input_boolean.nap", "on")
     assert manager.blocked_by(["nap"]) == "nap"
+
+
+async def test_presence_light_slot_during_naps(hass: HomeAssistant, calls):
+    # A slot that follows the naps of the house (here a `schedule` helper): the entrance at 40 % while it is on.
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.entrance", "off")
+    hass.states.async_set("schedule.nap_bedroom", "on")
+    await setup(
+        hass,
+        """
+rooms:
+  Bedroom: {naps: [schedule.nap_bedroom]}
+  Entrance: {lights: [light.entrance], presence: binary_sensor.presence}
+rules:
+  - id: entrance
+    type: presence_light
+    room: Entrance
+    slots:
+      - {during_naps: true, brightness: 40}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert calls["light.turn_on"][-1].data == {"entity_id": "light.entrance", "brightness_pct": 40}
+
+
+def test_slot_needs_hours_or_naps():
+    assert SLOT({"during_naps": True, "brightness": 40})["during_naps"] is True
+    with pytest.raises(vol.Invalid):
+        SLOT({"brightness": 40})
