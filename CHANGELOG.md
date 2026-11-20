@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-11-20
+
+### Fixes
+- Panel, Rules tab: each rule keeps its buttons (Test, enable, Edit) on one line at the right, with its state under its
+  name; the rows no longer wrap unevenly when the editor is open.
+
 ## 1.1.0 - 2026-11-20
 
 ### Features

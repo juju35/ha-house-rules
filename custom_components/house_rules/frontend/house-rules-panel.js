@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.1.0';
+const HOUSE_RULES_PANEL_VERSION = '1.1.1';
 
 const HRP_STRINGS = {
   "en": {
@@ -2291,7 +2291,7 @@ class HouseRulesPanel extends HTMLElement {
           .map((r) => {
             const tone = hrs().tone[r.state] || 'grey';
             const sel = this._ui.editing?.previous_id === r.id;
-            return `<div class="rrow ${sel ? 'sel' : ''}">${this.icon(hrs().icons[r.type], tone)}<div class="grow" style="flex:1 1 220px"><div class="tname">${hrpEsc(r.name)}</div><div class="sub small">${hrpEsc(r.id)}</div></div><span class="tstate" style="color:${this.tone(tone)[0]};min-width:120px">${hrpEsc(this.ruleLine(r))}</span><button class="btn sm" data-test="${hrpEsc(r.id)}"><ha-icon icon="mdi:play" style="--mdc-icon-size:14px"></ha-icon>${this.t('test')}</button>${r.state === 'snoozed' ? `<button class="btn sm" data-unsnooze="${hrpEsc(r.id)}">${this.t('resume')}</button>` : ''}<label class="sw"><input type="checkbox" data-enable="${hrpEsc(r.id)}" ${r.state !== 'disabled' ? 'checked' : ''} aria-label="${hrpEsc(r.name)}"><span></span></label><button class="btn sm" data-edit="${hrpEsc(r.id)}">${this.t('edit')}</button></div>`;
+            return `<div class="rrow ${sel ? 'sel' : ''}">${this.icon(hrs().icons[r.type], tone)}<div class="grow"><div class="tname">${hrpEsc(r.name)}</div><div class="tstate" style="color:${this.tone(tone)[0]}">${hrpEsc(this.ruleLine(r))}</div><div class="sub small">${hrpEsc(r.id)}</div></div><div class="acts"><button class="btn sm" data-test="${hrpEsc(r.id)}"><ha-icon icon="mdi:play" style="--mdc-icon-size:14px"></ha-icon>${this.t('test')}</button>${r.state === 'snoozed' ? `<button class="btn sm" data-unsnooze="${hrpEsc(r.id)}">${this.t('resume')}</button>` : ''}<label class="sw"><input type="checkbox" data-enable="${hrpEsc(r.id)}" ${r.state !== 'disabled' ? 'checked' : ''} aria-label="${hrpEsc(r.name)}"><span></span></label><button class="btn sm" data-edit="${hrpEsc(r.id)}">${this.t('edit')}</button></div></div>`;
           })
           .join('');
         return `<section><h2>${hrpEsc(this.t(`type.${t}`))}</h2>${rows}</section>`;
@@ -2773,7 +2773,10 @@ const HRP_CSS = `
   .grid2.tight { gap: 10px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
   .tile { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: var(--hr-tile); min-width: 0; }
-  .rrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--hr-tile); flex-wrap: wrap; }
+  .rrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--hr-tile); }
+  .rrow .grow { flex: 1; min-width: 0; }
+  .rrow .acts { display: flex; align-items: center; gap: 8px; flex: none; }
+  @media (max-width: 600px) { .rrow { flex-wrap: wrap; } .rrow .acts { width: 100%; justify-content: flex-end; } }
   .rrow.sel { box-shadow: inset 0 0 0 2px var(--primary-color); }
   .ico { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
   .ico ha-icon { --mdc-icon-size: 22px; }
