@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 - 2026-11-20
+
+### Fixes
+- Panel header: laid out by the width of the panel, not of the window — with the sidebar open, the title no longer
+  wraps and the header is no longer cut. The menu button only shows when Home Assistant hides the sidebar, the title
+  and summary end with an ellipsis, and the tabs scroll instead of wrapping on a narrow screen.
+
 ## 1.2.0 - 2026-11-20
 
 ### Features
