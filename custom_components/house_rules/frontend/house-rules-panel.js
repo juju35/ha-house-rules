@@ -2134,7 +2134,12 @@ class HouseRulesPanel extends HTMLElement {
     }
   }
 
-  set narrow(_v) {}
+  // Home Assistant's narrow layout (sidebar hidden): the menu button opens it.
+  set narrow(value) {
+    if (Boolean(value) === this._narrow) return;
+    this._narrow = Boolean(value);
+    this.shadowRoot?.querySelector('.page')?.classList.toggle('narrow', this._narrow);
+  }
   set panel(_v) {}
 
   connectedCallback() {
@@ -2239,7 +2244,7 @@ class HouseRulesPanel extends HTMLElement {
     if (d === undefined) content = '<div class="empty">…</div>';
     else if (d === null) content = '<div class="empty">House Rules is not loaded.</div>';
     else content = this[`tab_${this._ui.tab}`]();
-    this.shadowRoot.innerHTML = `<style>${HRP_CSS}${hrs().animCss}</style><div class="page" style="${this.vars()}">${this.top()}<main>${content}</main>${this.dialog()}</div>`;
+    this.shadowRoot.innerHTML = `<style>${HRP_CSS}${hrs().animCss}</style><div class="page${this._narrow ? ' narrow' : ''}" style="${this.vars()}">${this.top()}<main>${content}</main>${this.dialog()}</div>`;
     this.bind();
     if (keep) {
       const el = this.shadowRoot.getElementById(keep.id);
@@ -2817,15 +2822,19 @@ class HouseRulesPanel extends HTMLElement {
 const HRP_CSS = `
   :host { display: block; height: 100%; background: var(--primary-background-color); color: var(--primary-text-color); }
   .page { min-height: 100%; }
-  .hdr { position: relative; height: 96px; overflow: hidden; background: var(--hr-sky); }
+  .hdr { position: relative; height: 96px; overflow: hidden; background: var(--hr-sky); container-type: inline-size; }
   .hdr .hr-scene { position: absolute; right: 24px; bottom: 5px; opacity: .9; }
   .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--hr-ground); }
   .hdrc { position: absolute; left: 16px; right: 24px; top: 22px; display: flex; align-items: center; gap: 12px; }
-  .hdrc .row { margin-right: min(360px, 30vw); }
-  .menu { display: none; }
-  @media (max-width: 870px) { .menu { display: inline-flex; } .hdrc .row { margin-right: 0; } .hdr .hr-scene { opacity: .35; } }
-  .tabs { display: flex; flex-wrap: wrap; padding: 0 24px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
-  .tab { padding: 12px 4px; margin-right: 24px; font-family: inherit; font-weight: 600; font-size: 14px; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
+  .hdrc .row { margin-right: min(360px, 30cqw); flex-shrink: 0; }
+  .hdrc .grow > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hdrc .menu { display: none; }
+  .page.narrow .hdrc .menu { display: inline-flex; }
+  /* By the width of the panel, not of the window: the sidebar open leaves less room. */
+  @container (max-width: 760px) { .hdrc .row { margin-right: 0; } .hdr .hr-scene { opacity: .35; } }
+  @container (max-width: 480px) { .hdrc .row .pill { display: none; } }
+  .tabs { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 24px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
+  .tab { flex-shrink: 0; padding: 12px 4px; margin-right: 24px; font-family: inherit; font-weight: 600; font-size: 14px; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
   .tab.on { color: var(--primary-text-color); font-weight: 700; border-bottom-color: var(--primary-color); }
   main { max-width: 1232px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
   h2 { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); margin: 0 0 8px; }
