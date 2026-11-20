@@ -13,8 +13,7 @@
   mere idea or feature issue.
 - Keep history clean and linear: small, focused commits, one logical change each.
 - `main` is protected by a ruleset: **squash-merge only**, the commit message is the PR
-  **title + description** (not the commit list, so the screenshots bot's `[skip ci]` never
-  reaches `main`); tags follow a `v*` ruleset.
+  **title + description** (not the commit list); tags follow a `v*` ruleset.
 
 ## Before opening a PR — run the checks locally
 CI mirrors these; running them first avoids round-trips:
@@ -64,7 +63,8 @@ This is a **standalone integration** (its own integration, panel and cards): it 
 - Panel and card strings: `HRP_STRINGS` (panel) and `HR_STRINGS` (cards, also the type/state/result labels the panel reuses).
 
 ## Screenshots — do not edit or commit them by hand
-The Screenshots workflow (to add, as in the other ha-* repos) regenerates them on the PR branch and commits them with `[skip ci]`.
+The Screenshots workflow (`scripts/screenshots.py`, mock data) regenerates them on the PR branch and pushes them as the
+GitHub App (secrets `APP_ID` / `APP_PRIVATE_KEY`), so the PR checks run on that commit like on any other (no `[skip ci]`).
 Comparison is exact. They are English, with light/dark twins, neutral/mock data, and never
 real family names. **One GIF per distinct animation/state/variant** (not one per repo).
 
