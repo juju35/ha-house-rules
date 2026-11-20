@@ -10,11 +10,10 @@ from typing import Any
 from homeassistant.core import CALLBACK_TYPE, Event, callback
 from homeassistant.util import dt as dt_util
 
-from ..const import PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD
+from ..const import PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD, WEEKDAYS
 from .base import UNAVAILABLE, Rule, changed
 
 CLEANING = ("cleaning", "returning")
-WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
 
 def room_lights(room: dict[str, Any] | None) -> list[str]:
@@ -254,6 +253,13 @@ class PresenceLight(Rule):
                 return slot
         return None
 
+    def nap_lights(self) -> set[str]:
+        """The lights kept off now: a room of the house has its nap (`not_during_naps`: true for all of them)."""
+        keep = self.cfg.get("not_during_naps")
+        if not keep or not self.manager.napping():
+            return set()
+        return set(self.lights()) if keep is True else set(keep)
+
     def can_light(self) -> bool:
         return self.active() and self.dark() and self.in_windows()
 
@@ -313,8 +319,9 @@ class PresenceLight(Rule):
         if any(self.value(light) == "on" and not self.manager.arbiter.wanted(light) for light in lights):
             return
         names = []
+        napping = self.nap_lights()
         for light in lights:
-            if light in self.by_hand or light in self.claimed:
+            if light in self.by_hand or light in self.claimed or light in napping:
                 continue
             slot = self.slot(light) or {}
             if slot.get("off"):

@@ -12,6 +12,9 @@
   - `lights`: the lights of the rule, other rooms' included (default: the room's);
   - a light turned off by hand while someone is there stays off until the room is empty; nothing is turned on while a
     light of the room is already on by hand.
+- Naps: `rooms[].naps` (`start`, `end`, optional `days`). While a room of the house has its nap, the rules that
+  respect the new `nap` condition are paused (a chime, a light alert…), and `presence_light` keeps its
+  `not_during_naps` lights off. The Rooms tab edits them on one line (`13:30-15:00; sat,sun 14:00-16:00`).
 - Rooms tab: several presence sensors separated by commas.
 
 ## 1.1.1 - 2026-11-20

@@ -23,6 +23,7 @@ from .const import (
     SENSOR_FLASH,
     VACUUM_FOLLOW,
     VACUUM_GUARD,
+    WEEKDAYS,
 )
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,63}$")
@@ -34,7 +35,14 @@ RESPECT = vol.All(cv.ensure_list, [vol.In(CONDITIONS)])
 WINDOW = vol.Schema({vol.Required("start"): TIME, vol.Required("end"): TIME})
 PERCENT = vol.All(vol.Coerce(int), vol.Range(min=1, max=100))
 DELAY = vol.All(cv.time_period, vol.Range(min=timedelta(0)))
-WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+# A nap of a room: start, end and optionally the days (every day when none).
+NAP = vol.Schema(
+    {
+        vol.Required("start"): TIME,
+        vol.Required("end"): TIME,
+        vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
+    }
+)
 # A time slot of presence lights: some lights (all when none) kept off, or turned on at a brightness / colour, with
 # their own delay before off. The first slot that applies to a light decides.
 SLOT = vol.Schema(
@@ -203,6 +211,7 @@ TYPE_SCHEMAS: dict[str, vol.Schema] = {
             vol.Optional("brightness"): PERCENT,
             vol.Optional("brightness_entity"): cv.entity_id,
             vol.Optional("slots", default=list): [SLOT],
+            vol.Optional("not_during_naps"): vol.Any(cv.boolean, ENTITIES),
         }
     ),
     LOCK_GUARD: vol.Schema(
@@ -249,6 +258,7 @@ ROOM = vol.Schema(
         vol.Optional("climate"): cv.entity_id,
         vol.Optional("presence"): vol.Any(cv.entity_id, ENTITIES),
         vol.Optional("illuminance"): cv.entity_id,
+        vol.Optional("naps", default=list): vol.All(cv.ensure_list, [NAP]),
     },
     extra=vol.ALLOW_EXTRA,
 )

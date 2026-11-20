@@ -173,6 +173,7 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `climate` | Air conditioner of the room: while it runs, `vacuum_guard` lets the robot clean with the opening open |
 | `presence` | Presence/occupancy `binary_sensor`(s) (`presence_light`): someone is there while one of them is on |
 | `illuminance` | Light level sensor (`dark_below` of `vacuum_follow` / `presence_light`) |
+| `naps` | Nap slots of the room: `start`, `end` and optionally `days` (`mon` … `sun`, every day when none). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: `13:30-15:00; sat,sun 14:00-16:00` |
 
 #### Common options of every rule
 
@@ -182,7 +183,7 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `type` | required | One of the types below |
 | `name` | from the id | Display name (rule device, panel, cards, journal) |
 | `enabled` | `true` | `false` pauses the rule; the rule's switch writes it |
-| `respect` | `[]` | Global conditions the rule respects: `quiet_hours`, `away`, `alarm`, `vacation` |
+| `respect` | `[]` | Global conditions the rule respects: `quiet_hours`, `away`, `alarm`, `vacation`, `nap` (a room of the house has its nap) |
 | `notify` | `settings.notify` | Notification target of this rule |
 
 Durations take `"HH:MM:SS"` or a number of seconds; times of day take `"HH:MM"`.
@@ -383,6 +384,7 @@ Presence in the room turns its lights on when it is dark (below `dark_below`, wi
 | `brightness` | light's own | 1–100 % |
 | `brightness_entity` | none | A sensor or number giving the brightness in % (wins over `brightness`) |
 | `slots` | none | `start`, `end`, optional `days` (`mon` … `sun`) and `lights`, then `off: true`, or `brightness` / `color` (RGB), and optionally `off_delay` |
+| `not_during_naps` | none | Lights not turned on while a room of the house has its nap (`rooms[].naps`); `true` for all of the rule's lights |
 
 ```yaml
 - id: hallway_presence
@@ -393,6 +395,7 @@ Presence in the room turns its lights on when it is dark (below `dark_below`, wi
   on_after: 5                    # someone passing by doesn't count
   off_delay: "00:00:30"
   transition: 1
+  not_during_naps: [light.hallway]   # the bedroom's nap: only the night light
   slots:
     - {start: "06:30", end: "08:00", days: [mon, tue, wed, thu, fri], off: true}
     - {start: "20:00", end: "09:00", lights: [light.hallway_night_light], brightness: 30, color: [0, 0, 255]}

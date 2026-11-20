@@ -651,3 +651,43 @@ rules:
     hass.states.async_set("binary_sensor.presence", "on")
     await hass.async_block_till_done()
     assert not calls["light.turn_on"], "the lamp is on by hand: the ceiling light stays off"
+
+
+async def test_presence_light_not_during_naps(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    for light in ("light.hallway", "light.night"):
+        hass.states.async_set(light, "off")
+    start, end = _window(30, 30)
+    manager = await setup(
+        hass,
+        f"""
+rooms:
+  Bedroom:
+    naps: [{{start: "{start}", end: "{end}"}}]
+  Hallway: {{lights: [light.hallway, light.night], presence: binary_sensor.presence}}
+rules:
+  - {{id: hallway, type: presence_light, room: Hallway, not_during_naps: [light.hallway]}}
+""",
+    )
+    assert manager.napping() == ["Bedroom"]
+    assert manager.conditions()["napping"] == ["Bedroom"]
+    # A rule respecting the naps is paused during them.
+    assert manager.blocked_by(["nap"]) == "nap"
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in calls["light.turn_on"]] == ["light.night"]
+
+
+async def test_naps_days(hass: HomeAssistant, calls):
+    start, end = _window(30, 30)
+    days = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+    other = days[(dt_util.now().weekday() + 1) % 7]
+    manager = await setup(
+        hass,
+        f"""
+rooms:
+  Bedroom:
+    naps: [{{start: "{start}", end: "{end}", days: [{other}]}}]
+""",
+    )
+    assert manager.napping() == []
