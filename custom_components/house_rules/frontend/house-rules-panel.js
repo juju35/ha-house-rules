@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.3.1';
+const HOUSE_RULES_PANEL_VERSION = '1.3.2';
 
 // Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom" (days optional, an on/off
 // entity such as a `schedule` helper shared with other integrations), both ways. A part that doesn't

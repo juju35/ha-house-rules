@@ -223,10 +223,13 @@ SMART_COMFORT_OPTIONS = {
                     {"start": "06:30", "end": "08:00", "days": ["mon", "fri"], "off": True},
                     {"during_naps": True, "lights": ["light.entrance"], "brightness": 40},
                     {"start": "17:00", "end": "00:00", "color": [0, 0, 255], "off_after": 22},
+                    {"start": "20:00", "end": "09:00", "lights": ["light.hallway"], False: True},
+                    {"start": "10:00", "end": "20:00", "lights": ["light.hallway"], "false": True},
                 ],
             },
         },
         {"name": "Living room", "lights": ["light.living"]},
+        {"name": "Entrée", "presence": {"sensors": ["binary_sensor.door"]}},
     ]
 }
 
@@ -239,7 +242,7 @@ async def test_import_smart_comfort(hass: HomeAssistant, hass_ws_client):
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "house_rules/import/analyze"})
     proposals = [p for p in (await client.receive_json())["result"]["proposals"] if p["source"] == "smart_comfort"]
-    assert len(proposals) == 1
+    assert [p["rule"]["id"] for p in proposals] == ["presence_entrance", "presence_entree"]
     found = proposals[0]
     assert found["rule"] == {
         "id": "presence_entrance",
@@ -256,6 +259,8 @@ async def test_import_smart_comfort(hass: HomeAssistant, hass_ws_client):
             {"start": "06:30", "end": "08:00", "days": ["mon", "fri"], "off": True},
             {"lights": ["light.entrance"], "brightness": 40, "during_naps": True},
             {"start": "17:00", "end": "00:00", "color": [0, 0, 255], "off_delay": "00:22:00"},
+            {"start": "20:00", "end": "09:00", "lights": ["light.hallway"], "off": True},
+            {"start": "10:00", "end": "20:00", "lights": ["light.hallway"], "off": True},
         ],
     }
     assert found["rooms"] == {
@@ -276,4 +281,9 @@ async def test_import_smart_comfort(hass: HomeAssistant, hass_ws_client):
     assert manager.rules["presence_entrance"].status()["state"] != "error"
     assert manager.rooms["Bedroom"]["naps"] == ["schedule.nap_bedroom"]
     await client.send_json({"id": 3, "type": "house_rules/import/analyze"})
-    assert not [p for p in (await client.receive_json())["result"]["proposals"] if p["source"] == "smart_comfort"]
+    left = [
+        p["rule"]["room"]
+        for p in (await client.receive_json())["result"]["proposals"]
+        if p["source"] == "smart_comfort"
+    ]
+    assert left == ["Entrée"]

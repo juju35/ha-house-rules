@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.2 - 2026-11-20
+
+### Fixes
+- Import from Smart Comfort: a slot written with an unquoted `off: true` (read by YAML as a `false` key, then stored
+  as `"false"` in Smart Comfort's config entry) is imported as kept off, instead of turning the light on.
+- Imported rule ids fold the accents: `presence_entree` for the Entrée, no longer `presence_entr_e` (ids already
+  imported stay as they are).
+
 ## 1.3.1 - 2026-11-20
 
 ### Fixes
