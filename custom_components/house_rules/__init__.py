@@ -141,7 +141,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: HouseRulesConfigEntry) -
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: HouseRulesConfigEntry) -> bool:
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    """Platforms unloaded, the sidebar panel goes too (disabled or reloaded: setup adds it back)."""
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        async_remove_panel(hass)
+    return unloaded
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: HouseRulesConfigEntry) -> None:
