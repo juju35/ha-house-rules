@@ -2,7 +2,28 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.1.1';
+const HOUSE_RULES_PANEL_VERSION = '1.2.0';
+
+// Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom" (days optional, an on/off
+// entity such as a `schedule` helper shared with other integrations), both ways. A part that doesn't
+// read is kept as written: saving then shows the validation error.
+const hrpNapsText = (naps) =>
+  (Array.isArray(naps) ? naps : [])
+    .map((n) => typeof n === 'string' ? n : `${n.days?.length ? `${[].concat(n.days).join(',')} ` : ''}${n.end ? `${String(n.start).slice(0, 5)}-${String(n.end).slice(0, 5)}` : n.start}`)
+    .join('; ');
+const hrpNapsParse = (text) =>
+  text
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      if (/^[a-z_]+\.[a-z0-9_]+$/.test(part)) return part;
+      const m = part.match(/^(?:([a-z,\s]+?)\s+)?(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/i);
+      if (!m) return { start: part, end: '' };
+      const nap = { start: m[2].padStart(5, '0'), end: m[3].padStart(5, '0') };
+      if (m[1]) nap.days = m[1].toLowerCase().split(/[\s,]+/).filter(Boolean);
+      return nap;
+    });
 
 const HRP_STRINGS = {
   "en": {
@@ -55,6 +76,7 @@ const HRP_STRINGS = {
     "climate": "Air conditioner",
     "presence": "Presence",
     "illuminance": "Illuminance",
+    "naps": "Naps",
     "add_room": "Add a room",
     "rooms_help": "Room names as the vacuum reports them. Used by the vacuum and presence rules.",
     "remove": "Remove",
@@ -94,7 +116,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "paused (vacation)",
     "blocked.away": "paused (nobody home)",
-    "blocked.alarm": "paused (alarm armed)"
+    "blocked.alarm": "paused (alarm armed)",
+    "blocked.nap": "paused (nap)"
   },
   "fr": {
     "tabs": {
@@ -146,6 +169,7 @@ const HRP_STRINGS = {
     "climate": "Climatisation",
     "presence": "Présence",
     "illuminance": "Luminosité",
+    "naps": "Siestes",
     "add_room": "Ajouter une pièce",
     "rooms_help": "Noms de pièces tels que l'aspirateur les expose. Utilisée par les règles aspirateur et présence.",
     "remove": "Retirer",
@@ -185,7 +209,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "en pause (vacances)",
     "blocked.away": "en pause (personne à la maison)",
-    "blocked.alarm": "en pause (alarme armée)"
+    "blocked.alarm": "en pause (alarme armée)",
+    "blocked.nap": "en pause (sieste)"
   },
   "de": {
     "tabs": {
@@ -237,6 +262,7 @@ const HRP_STRINGS = {
     "climate": "Klimaanlage",
     "presence": "Anwesenheit",
     "illuminance": "Helligkeit",
+    "naps": "Mittagsschlaf",
     "add_room": "Raum hinzufügen",
     "rooms_help": "Raumnamen, wie der Saugroboter sie meldet. Verwendet von den Saugroboter- und Anwesenheitsregeln.",
     "remove": "Entfernen",
@@ -276,7 +302,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "pausiert (Urlaub)",
     "blocked.away": "pausiert (niemand zu Hause)",
-    "blocked.alarm": "pausiert (Alarm scharf)"
+    "blocked.alarm": "pausiert (Alarm scharf)",
+    "blocked.nap": "pausiert (Mittagsschlaf)"
   },
   "es": {
     "tabs": {
@@ -328,6 +355,7 @@ const HRP_STRINGS = {
     "climate": "Aire acondicionado",
     "presence": "Presencia",
     "illuminance": "Luminosidad",
+    "naps": "Siestas",
     "add_room": "Añadir una habitación",
     "rooms_help": "Nombres de las habitaciones tal como los indica el robot. Los usan las reglas del robot y de presencia.",
     "remove": "Quitar",
@@ -367,7 +395,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "en pausa (vacaciones)",
     "blocked.away": "en pausa (nadie en casa)",
-    "blocked.alarm": "en pausa (alarma armada)"
+    "blocked.alarm": "en pausa (alarma armada)",
+    "blocked.nap": "en pausa (siesta)"
   },
   "it": {
     "tabs": {
@@ -419,6 +448,7 @@ const HRP_STRINGS = {
     "climate": "Condizionatore",
     "presence": "Presenza",
     "illuminance": "Luminosità",
+    "naps": "Riposini",
     "add_room": "Aggiungi una stanza",
     "rooms_help": "Nomi delle stanze come li riporta il robot. Usati dalle regole del robot e di presenza.",
     "remove": "Rimuovi",
@@ -458,7 +488,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "in pausa (vacanza)",
     "blocked.away": "in pausa (nessuno in casa)",
-    "blocked.alarm": "in pausa (allarme inserito)"
+    "blocked.alarm": "in pausa (allarme inserito)",
+    "blocked.nap": "in pausa (riposino)"
   },
   "nl": {
     "tabs": {
@@ -510,6 +541,7 @@ const HRP_STRINGS = {
     "climate": "Airco",
     "presence": "Aanwezigheid",
     "illuminance": "Lichtsterkte",
+    "naps": "Dutjes",
     "add_room": "Ruimte toevoegen",
     "rooms_help": "Namen van ruimtes zoals de robot ze meldt. Gebruikt door de robot- en aanwezigheidsregels.",
     "remove": "Verwijderen",
@@ -549,7 +581,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "gepauzeerd (vakantie)",
     "blocked.away": "gepauzeerd (niemand thuis)",
-    "blocked.alarm": "gepauzeerd (alarm ingeschakeld)"
+    "blocked.alarm": "gepauzeerd (alarm ingeschakeld)",
+    "blocked.nap": "gepauzeerd (dutje)"
   },
   "pt": {
     "tabs": {
@@ -601,6 +634,7 @@ const HRP_STRINGS = {
     "climate": "Ar condicionado",
     "presence": "Presença",
     "illuminance": "Luminosidade",
+    "naps": "Sestas",
     "add_room": "Adicionar uma divisão",
     "rooms_help": "Nomes das divisões tal como o robô os indica. Usados pelas regras do robô e de presença.",
     "remove": "Remover",
@@ -640,7 +674,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "em pausa (férias)",
     "blocked.away": "em pausa (ninguém em casa)",
-    "blocked.alarm": "em pausa (alarme armado)"
+    "blocked.alarm": "em pausa (alarme armado)",
+    "blocked.nap": "em pausa (sesta)"
   },
   "pl": {
     "tabs": {
@@ -692,6 +727,7 @@ const HRP_STRINGS = {
     "climate": "Klimatyzator",
     "presence": "Obecność",
     "illuminance": "Natężenie światła",
+    "naps": "Drzemki",
     "add_room": "Dodaj pomieszczenie",
     "rooms_help": "Nazwy pomieszczeń tak, jak podaje je robot. Używane przez reguły robota i obecności.",
     "remove": "Usuń",
@@ -731,7 +767,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "wstrzymana (urlop)",
     "blocked.away": "wstrzymana (nikogo w domu)",
-    "blocked.alarm": "wstrzymana (alarm uzbrojony)"
+    "blocked.alarm": "wstrzymana (alarm uzbrojony)",
+    "blocked.nap": "wstrzymane (drzemka)"
   },
   "sr": {
     "tabs": {
@@ -783,6 +820,7 @@ const HRP_STRINGS = {
     "climate": "Клима",
     "presence": "Присуство",
     "illuminance": "Осветљеност",
+    "naps": "Дремке",
     "add_room": "Додај просторију",
     "rooms_help": "Називи просторија онако како их робот пријављује. Користе их правила робота и присуства.",
     "remove": "Уклони",
@@ -822,7 +860,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "паузирано (одмор)",
     "blocked.away": "паузирано (нико није код куће)",
-    "blocked.alarm": "паузирано (аларм активан)"
+    "blocked.alarm": "паузирано (аларм активан)",
+    "blocked.nap": "паузирано (дремка)"
   },
   "ro": {
     "tabs": {
@@ -874,6 +913,7 @@ const HRP_STRINGS = {
     "climate": "Aer condiționat",
     "presence": "Prezență",
     "illuminance": "Luminozitate",
+    "naps": "Somnul de prânz",
     "add_room": "Adaugă o cameră",
     "rooms_help": "Numele camerelor așa cum le raportează robotul. Folosite de regulile robotului și de prezență.",
     "remove": "Elimină",
@@ -913,7 +953,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "în pauză (vacanță)",
     "blocked.away": "în pauză (nimeni acasă)",
-    "blocked.alarm": "în pauză (alarmă armată)"
+    "blocked.alarm": "în pauză (alarmă armată)",
+    "blocked.nap": "în pauză (somn de prânz)"
   },
   "da": {
     "tabs": {
@@ -965,6 +1006,7 @@ const HRP_STRINGS = {
     "climate": "Aircondition",
     "presence": "Tilstedeværelse",
     "illuminance": "Lysstyrke",
+    "naps": "Lure",
     "add_room": "Tilføj et rum",
     "rooms_help": "Navne på rum, som robotten melder dem. Bruges af robot- og tilstedeværelsesreglerne.",
     "remove": "Fjern",
@@ -1004,7 +1046,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "på pause (ferie)",
     "blocked.away": "på pause (ingen hjemme)",
-    "blocked.alarm": "på pause (alarm tilkoblet)"
+    "blocked.alarm": "på pause (alarm tilkoblet)",
+    "blocked.nap": "sat på pause (lur)"
   },
   "sv": {
     "tabs": {
@@ -1056,6 +1099,7 @@ const HRP_STRINGS = {
     "climate": "Luftkonditionering",
     "presence": "Närvaro",
     "illuminance": "Ljusstyrka",
+    "naps": "Tupplurar",
     "add_room": "Lägg till ett rum",
     "rooms_help": "Rummens namn så som roboten rapporterar dem. Används av robot- och närvaroreglerna.",
     "remove": "Ta bort",
@@ -1095,7 +1139,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "pausad (semester)",
     "blocked.away": "pausad (ingen hemma)",
-    "blocked.alarm": "pausad (larm aktiverat)"
+    "blocked.alarm": "pausad (larm aktiverat)",
+    "blocked.nap": "pausad (tupplur)"
   },
   "bg": {
     "tabs": {
@@ -1147,6 +1192,7 @@ const HRP_STRINGS = {
     "climate": "Климатик",
     "presence": "Присъствие",
     "illuminance": "Осветеност",
+    "naps": "Следобеден сън",
     "add_room": "Добави стая",
     "rooms_help": "Имената на стаите, както ги съобщава роботът. Използват се от правилата за робота и присъствието.",
     "remove": "Премахни",
@@ -1186,7 +1232,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "спряно (отпуск)",
     "blocked.away": "спряно (няма никой)",
-    "blocked.alarm": "спряно (алармата е активна)"
+    "blocked.alarm": "спряно (алармата е активна)",
+    "blocked.nap": "спряно (следобеден сън)"
   },
   "ru": {
     "tabs": {
@@ -1238,6 +1285,7 @@ const HRP_STRINGS = {
     "climate": "Кондиционер",
     "presence": "Присутствие",
     "illuminance": "Освещённость",
+    "naps": "Дневной сон",
     "add_room": "Добавить комнату",
     "rooms_help": "Названия комнат так, как их сообщает робот. Используются правилами робота и присутствия.",
     "remove": "Убрать",
@@ -1277,7 +1325,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "приостановлено (отпуск)",
     "blocked.away": "приостановлено (никого нет дома)",
-    "blocked.alarm": "приостановлено (сигнализация включена)"
+    "blocked.alarm": "приостановлено (сигнализация включена)",
+    "blocked.nap": "приостановлено (дневной сон)"
   },
   "uk": {
     "tabs": {
@@ -1329,6 +1378,7 @@ const HRP_STRINGS = {
     "climate": "Кондиціонер",
     "presence": "Присутність",
     "illuminance": "Освітленість",
+    "naps": "Денний сон",
     "add_room": "Додати кімнату",
     "rooms_help": "Назви кімнат так, як їх повідомляє робот. Використовуються правилами робота й присутності.",
     "remove": "Прибрати",
@@ -1368,7 +1418,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "призупинено (відпустка)",
     "blocked.away": "призупинено (нікого вдома)",
-    "blocked.alarm": "призупинено (сигналізацію ввімкнено)"
+    "blocked.alarm": "призупинено (сигналізацію ввімкнено)",
+    "blocked.nap": "призупинено (денний сон)"
   },
   "hu": {
     "tabs": {
@@ -1420,6 +1471,7 @@ const HRP_STRINGS = {
     "climate": "Légkondi",
     "presence": "Jelenlét",
     "illuminance": "Megvilágítás",
+    "naps": "Délutáni alvás",
     "add_room": "Helyiség hozzáadása",
     "rooms_help": "A helyiségek neve, ahogy a robot jelenti őket. A robot- és jelenlétszabályok használják.",
     "remove": "Eltávolítás",
@@ -1459,7 +1511,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "szünetel (szabadság)",
     "blocked.away": "szünetel (senki sincs otthon)",
-    "blocked.alarm": "szünetel (riasztó élesítve)"
+    "blocked.alarm": "szünetel (riasztó élesítve)",
+    "blocked.nap": "szüneteltetve (délutáni alvás)"
   },
   "sk": {
     "tabs": {
@@ -1511,6 +1564,7 @@ const HRP_STRINGS = {
     "climate": "Klimatizácia",
     "presence": "Prítomnosť",
     "illuminance": "Osvetlenie",
+    "naps": "Spánok cez deň",
     "add_room": "Pridať miestnosť",
     "rooms_help": "Názvy miestností tak, ako ich hlási robot. Používajú ich pravidlá robota a prítomnosti.",
     "remove": "Odobrať",
@@ -1550,7 +1604,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "pozastavené (dovolenka)",
     "blocked.away": "pozastavené (nikto doma)",
-    "blocked.alarm": "pozastavené (alarm aktívny)"
+    "blocked.alarm": "pozastavené (alarm aktívny)",
+    "blocked.nap": "pozastavené (spánok cez deň)"
   },
   "cs": {
     "tabs": {
@@ -1602,6 +1657,7 @@ const HRP_STRINGS = {
     "climate": "Klimatizace",
     "presence": "Přítomnost",
     "illuminance": "Osvětlení",
+    "naps": "Spánek přes den",
     "add_room": "Přidat místnost",
     "rooms_help": "Názvy místností tak, jak je hlásí robot. Používají je pravidla robota a přítomnosti.",
     "remove": "Odebrat",
@@ -1641,7 +1697,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "pozastaveno (dovolená)",
     "blocked.away": "pozastaveno (nikdo doma)",
-    "blocked.alarm": "pozastaveno (alarm aktivní)"
+    "blocked.alarm": "pozastaveno (alarm aktivní)",
+    "blocked.nap": "pozastaveno (spánek přes den)"
   },
   "sl": {
     "tabs": {
@@ -1693,6 +1750,7 @@ const HRP_STRINGS = {
     "climate": "Klimatska naprava",
     "presence": "Prisotnost",
     "illuminance": "Osvetljenost",
+    "naps": "Dremež",
     "add_room": "Dodaj prostor",
     "rooms_help": "Imena prostorov, kot jih sporoča robot. Uporabljajo jih pravila robota in prisotnosti.",
     "remove": "Odstrani",
@@ -1732,7 +1790,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "ustavljeno (dopust)",
     "blocked.away": "ustavljeno (nikogar ni doma)",
-    "blocked.alarm": "ustavljeno (alarm vklopljen)"
+    "blocked.alarm": "ustavljeno (alarm vklopljen)",
+    "blocked.nap": "ustavljeno (dremež)"
   },
   "lv": {
     "tabs": {
@@ -1784,6 +1843,7 @@ const HRP_STRINGS = {
     "climate": "Gaisa kondicionieris",
     "presence": "Klātbūtne",
     "illuminance": "Apgaismojums",
+    "naps": "Diendusa",
     "add_room": "Pievienot telpu",
     "rooms_help": "Telpu nosaukumi, kā tos ziņo robots. Tos izmanto robota un klātbūtnes noteikumi.",
     "remove": "Noņemt",
@@ -1823,7 +1883,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "apturēts (atvaļinājums)",
     "blocked.away": "apturēts (neviena nav mājās)",
-    "blocked.alarm": "apturēts (signalizācija aktivizēta)"
+    "blocked.alarm": "apturēts (signalizācija aktivizēta)",
+    "blocked.nap": "apturēts (diendusa)"
   },
   "el": {
     "tabs": {
@@ -1875,6 +1936,7 @@ const HRP_STRINGS = {
     "climate": "Κλιματιστικό",
     "presence": "Παρουσία",
     "illuminance": "Φωτεινότητα",
+    "naps": "Μεσημεριανός ύπνος",
     "add_room": "Προσθήκη δωματίου",
     "rooms_help": "Ονόματα δωματίων όπως τα αναφέρει το ρομπότ. Χρησιμοποιούνται από τους κανόνες ρομπότ και παρουσίας.",
     "remove": "Αφαίρεση",
@@ -1914,7 +1976,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "σε παύση (διακοπές)",
     "blocked.away": "σε παύση (κανείς στο σπίτι)",
-    "blocked.alarm": "σε παύση (ο συναγερμός είναι οπλισμένος)"
+    "blocked.alarm": "σε παύση (ο συναγερμός είναι οπλισμένος)",
+    "blocked.nap": "σε παύση (μεσημεριανός ύπνος)"
   },
   "sr-Latn": {
     "tabs": {
@@ -1966,6 +2029,7 @@ const HRP_STRINGS = {
     "climate": "Klima",
     "presence": "Prisustvo",
     "illuminance": "Osvetljenost",
+    "naps": "Dremke",
     "add_room": "Dodaj prostoriju",
     "rooms_help": "Nazivi prostorija onako kako ih robot prijavljuje. Koriste ih pravila robota i prisustva.",
     "remove": "Ukloni",
@@ -2005,7 +2069,8 @@ const HRP_STRINGS = {
     "ok": "OK",
     "blocked.vacation": "pauzirano (odmor)",
     "blocked.away": "pauzirano (niko nije kod kuće)",
-    "blocked.alarm": "pauzirano (alarm aktivan)"
+    "blocked.alarm": "pauzirano (alarm aktivan)",
+    "blocked.nap": "pauzirano (dremka)"
   }
 };
 
@@ -2040,7 +2105,8 @@ const HRP_TEMPLATES = {
     'id: washing_machine\ntype: cycle_done\npower_entity: sensor.washing_machine_power\ndone_below: 3\ndone_for: "00:03:00"\ndoor: binary_sensor.washing_machine_door\nreminder: "00:30:00"\n',
   vacuum_follow: 'id: vacuum_lights\ntype: vacuum_follow\nvacuum: vacuum.robot\nroom_sensor: sensor.robot_current_room\ntransition: 10\n',
   vacuum_guard: 'id: vacuum_guard\ntype: vacuum_guard\nvacuum: vacuum.robot\nroom_sensor: sensor.robot_current_room\n',
-  presence_light: 'id: hall_presence\ntype: presence_light\nroom: Hall\ndark_below: 30\noff_delay: "00:00:30"\n',
+  presence_light:
+    'id: hall_presence\ntype: presence_light\nroom: Hall\ndark_below: 30\non_after: 2\noff_delay: "00:00:30"\nslots:\n  - {start: "22:00", end: "07:00", brightness: 20}\n',
   lock_guard: 'id: front_lock\ntype: lock_guard\nlock: lock.front_door\ndoor: binary_sensor.front_door\nlock_after: "00:00:30"\n',
   leak_guard:
     'id: kitchen_leak\ntype: leak_guard\nsensors: [binary_sensor.sink_leak]\ncut: [switch.dishwasher]\nlights: [light.hall]\n',
@@ -2315,16 +2381,17 @@ class HouseRulesPanel extends HTMLElement {
   tab_rooms() {
     const rooms = this._ui.rooms || JSON.parse(JSON.stringify(this._data.rooms || {}));
     this._ui.rooms = rooms;
-    const fields = ['light', 'opening', 'climate', 'presence', 'illuminance'];
+    const fields = ['light', 'opening', 'climate', 'presence', 'illuminance', 'naps'];
     const head = `<tr><th>${this.t('room')}</th>${fields.map((f) => `<th>${this.t(f)}</th>`).join('')}<th></th></tr>`;
     const rows = Object.entries(rooms)
       .map(([name, room], i) => {
         const cells = fields
           .map((f) => {
             let v = room[f] ?? '';
-            if (Array.isArray(v)) v = v.join(', ');
+            if (f === 'naps') v = hrpNapsText(v);
+            else if (Array.isArray(v)) v = v.join(', ');
             const st = (Array.isArray(room[f]) ? room[f][0] : room[f]) && this._hass.states[Array.isArray(room[f]) ? room[f][0] : room[f]];
-            return `<td><input class="cell" id="room-${i}-${f}" data-room="${i}" data-field="${f}" value="${hrpEsc(v)}" placeholder="—" aria-label="${hrpEsc(name)} ${this.t(f)}">${st ? `<div class="sub small">${hrpEsc(st.state)}${st.attributes?.unit_of_measurement ? ` ${hrpEsc(st.attributes.unit_of_measurement)}` : ''}</div>` : ''}</td>`;
+            return `<td><input class="cell" id="room-${i}-${f}" data-room="${i}" data-field="${f}" value="${hrpEsc(v)}" placeholder="${f === 'naps' ? '13:30-15:00; schedule.nap_bedroom' : '—'}" aria-label="${hrpEsc(name)} ${this.t(f)}">${st ? `<div class="sub small">${hrpEsc(st.state)}${st.attributes?.unit_of_measurement ? ` ${hrpEsc(st.attributes.unit_of_measurement)}` : ''}</div>` : ''}</td>`;
           })
           .join('');
         return `<tr><td><input class="cell name" id="room-${i}-name" data-room="${i}" data-field="__name" value="${hrpEsc(name)}" aria-label="${this.t('room')}"></td>${cells}<td><button class="rbtn plain" data-remove-room="${i}" aria-label="${this.t('remove')}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></td></tr>`;
@@ -2701,8 +2768,9 @@ class HouseRulesPanel extends HTMLElement {
     } else {
       const value = el.value.trim();
       if (!value) delete room[el.dataset.field];
-      else if (el.dataset.field === 'opening' && value.includes(','))
-        room.opening = value
+      else if (el.dataset.field === 'naps') room.naps = hrpNapsParse(value);
+      else if (['opening', 'presence'].includes(el.dataset.field) && value.includes(','))
+        room[el.dataset.field] = value
           .split(',')
           .map((v) => v.trim())
           .filter(Boolean);

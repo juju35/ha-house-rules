@@ -49,7 +49,10 @@ COND_QUIET: Final = "quiet_hours"
 COND_AWAY: Final = "away"
 COND_ALARM: Final = "alarm"
 COND_VACATION: Final = "vacation"
-CONDITIONS: Final = (COND_QUIET, COND_AWAY, COND_ALARM, COND_VACATION)
+WEEKDAYS: Final = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+# A nap in a room of the house (rooms[].naps).
+COND_NAP: Final = "nap"
+CONDITIONS: Final = (COND_QUIET, COND_AWAY, COND_ALARM, COND_VACATION, COND_NAP)
 
 # Rule states, shown by the rule sensor and the panel.
 ST_DISABLED: Final = "disabled"

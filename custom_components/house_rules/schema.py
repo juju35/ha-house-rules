@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -22,6 +23,7 @@ from .const import (
     SENSOR_FLASH,
     VACUUM_FOLLOW,
     VACUUM_GUARD,
+    WEEKDAYS,
 )
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,63}$")
@@ -31,6 +33,46 @@ TIME = cv.time
 RGB = vol.All(vol.ExactSequence((cv.byte, cv.byte, cv.byte)), vol.Coerce(list))
 RESPECT = vol.All(cv.ensure_list, [vol.In(CONDITIONS)])
 WINDOW = vol.Schema({vol.Required("start"): TIME, vol.Required("end"): TIME})
+PERCENT = vol.All(vol.Coerce(int), vol.Range(min=1, max=100))
+DELAY = vol.All(cv.time_period, vol.Range(min=timedelta(0)))
+# A nap of a room: start, end and optionally the days (every day when none) - or an on/off entity (a `schedule`
+# helper shared with other integrations, an input_boolean for an unplanned nap...): a nap while it is on.
+NAP_SLOT = vol.Schema(
+    {
+        vol.Required("start"): TIME,
+        vol.Required("end"): TIME,
+        vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
+    }
+)
+NAP = vol.Any(cv.entity_id, NAP_SLOT)
+
+
+def _slot_when(value: dict[str, Any]) -> dict[str, Any]:
+    """A slot has its hours, or applies during the naps of the house (`during_naps`)."""
+    if not value.get("during_naps") and not ("start" in value and "end" in value):
+        raise vol.Invalid("a slot needs start and end, or during_naps: true")
+    return value
+
+
+# A time slot of presence lights - or `during_naps: true`, while a room of the house has its nap: some lights (all
+# when none) kept off, or turned on at a brightness / colour, with their own delay before off. The first slot that
+# applies to a light decides.
+SLOT = vol.All(
+    vol.Schema(
+        {
+            vol.Optional("start"): TIME,
+            vol.Optional("end"): TIME,
+            vol.Optional("during_naps", default=False): cv.boolean,
+            vol.Optional("days"): vol.All(cv.ensure_list, [vol.In(WEEKDAYS)]),
+            vol.Optional("lights"): ENTITIES,
+            vol.Optional("off", default=False): cv.boolean,
+            vol.Optional("brightness"): PERCENT,
+            vol.Optional("color"): RGB,
+            vol.Optional("off_delay"): DURATION,
+        }
+    ),
+    _slot_when,
+)
 
 
 def rule_id(value: Any) -> str:
@@ -174,12 +216,18 @@ TYPE_SCHEMAS: dict[str, vol.Schema] = {
         {
             **COMMON,
             vol.Required("room"): cv.string,
+            vol.Optional("sensors"): ENTITIES,
+            vol.Optional("lights"): ENTITIES,
             vol.Optional("dark_below"): vol.Coerce(float),
             vol.Optional("hysteresis", default=5.0): vol.Coerce(float),
+            vol.Optional("on_after", default=0): DELAY,
             vol.Optional("off_delay", default="00:00:30"): DURATION,
+            vol.Optional("transition"): vol.All(vol.Coerce(float), vol.Range(min=0)),
             vol.Optional("windows", default=list): [WINDOW],
-            vol.Optional("brightness"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+            vol.Optional("brightness"): PERCENT,
             vol.Optional("brightness_entity"): cv.entity_id,
+            vol.Optional("slots", default=list): [SLOT],
+            vol.Optional("not_during_naps"): vol.Any(cv.boolean, ENTITIES),
         }
     ),
     LOCK_GUARD: vol.Schema(
@@ -224,8 +272,9 @@ ROOM = vol.Schema(
         vol.Optional("lights", default=list): ENTITIES,
         vol.Optional("opening"): ENTITIES,
         vol.Optional("climate"): cv.entity_id,
-        vol.Optional("presence"): cv.entity_id,
+        vol.Optional("presence"): vol.Any(cv.entity_id, ENTITIES),
         vol.Optional("illuminance"): cv.entity_id,
+        vol.Optional("naps", default=list): vol.All(cv.ensure_list, [NAP]),
     },
     extra=vol.ALLOW_EXTRA,
 )

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.2.0 - 2026-11-20
+
+### Features
+- `presence_light` reaches what Smart Comfort's lights on presence do, so they can move here:
+  - several sensors (`sensors`, or a list in the room's `presence`): someone is there while one of them is on;
+  - `on_after`: a presence must last that long before the lights turn on (someone passing by doesn't count);
+  - `transition`: fade when the lights turn on and off;
+  - `slots`: per time slot (and days) — or `during_naps: true`, while a room of the house has its nap — some lights
+    kept off, or turned on at a brightness and colour, with their own delay before off;
+  - `lights`: the lights of the rule, other rooms' included (default: the room's);
+  - a light turned off by hand while someone is there stays off until the room is empty; nothing is turned on while a
+    light of the room is already on by hand.
+- Naps: `rooms[].naps` (`start`, `end`, optional `days`). While a room of the house has its nap, the rules that
+  respect the new `nap` condition are paused (a chime, a light alert…), and `presence_light` keeps its
+  `not_during_naps` lights off. A nap may also be an on/off entity: a `schedule` helper shared with Smart Comfort
+  (one definition for both integrations), an `input_boolean` for an unplanned nap. The Rooms tab edits them on one
+  line (`13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom`).
+- Rooms tab: several presence sensors separated by commas.
+
 ## 1.1.1 - 2026-11-20
 
 ### Fixes

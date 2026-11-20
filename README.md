@@ -171,8 +171,30 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `light` / `lights` | The room's light(s); two rooms may share a light |
 | `opening` | Door/window `binary_sensor`(s) of the room (`vacuum_guard`) |
 | `climate` | Air conditioner of the room: while it runs, `vacuum_guard` lets the robot clean with the opening open |
-| `presence` | Presence/occupancy `binary_sensor` (`presence_light`) |
+| `presence` | Presence/occupancy `binary_sensor`(s) (`presence_light`): someone is there while one of them is on |
 | `illuminance` | Light level sensor (`dark_below` of `vacuum_follow` / `presence_light`) |
+| `naps` | Naps of the room: slots (`start`, `end` and optionally `days`, `mon` … `sun`, every day when none) and/or on/off entities (a nap while one is on: a `schedule` helper, an `input_boolean`…). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: `13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom` |
+
+##### Naps shared with other integrations
+
+Define the naps once in a core `schedule` helper and point every integration at it (Smart Comfort reads the same
+entity), so a change applies everywhere:
+
+```yaml
+# configuration.yaml
+schedule:
+  nap_bedroom:
+    name: Bedroom nap
+    monday: [{from: "13:30:00", to: "15:00:00"}]
+    saturday: [{from: "14:00:00", to: "16:00:00"}]
+```
+
+```yaml
+# house_rules.yaml
+rooms:
+  Bedroom:
+    naps: [schedule.nap_bedroom, input_boolean.unplanned_nap]   # a nap while one of them is on
+```
 
 #### Common options of every rule
 
@@ -182,7 +204,7 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `type` | required | One of the types below |
 | `name` | from the id | Display name (rule device, panel, cards, journal) |
 | `enabled` | `true` | `false` pauses the rule; the rule's switch writes it |
-| `respect` | `[]` | Global conditions the rule respects: `quiet_hours`, `away`, `alarm`, `vacation` |
+| `respect` | `[]` | Global conditions the rule respects: `quiet_hours`, `away`, `alarm`, `vacation`, `nap` (a room of the house has its nap) |
 | `notify` | `settings.notify` | Notification target of this rule |
 
 Durations take `"HH:MM:SS"` or a number of seconds; times of day take `"HH:MM"`.
@@ -364,22 +386,43 @@ While the robot cleans, as soon as it is in a room whose `opening` is open — o
 
 Presence in the room turns its lights on when it is dark (below `dark_below`, with `hysteresis` once on, since the light raises the level) and within `windows`; no presence for `off_delay` turns them off — unless another rule (the vacuum) still wants them, or they were on before.
 
+- **Sensors**: someone is there while one of the sensors is on (the room's `presence`, or `sensors`). With `on_after`, the presence must last that long first: someone passing by doesn't count.
+- **Slots**: the first slot that applies to a light decides — kept off (`off: true`), or turned on at a `brightness` and `color`, with its own `off_delay` (longer in the evening for a bathroom). A slot without `lights` applies to all of them; `days` limits it to some days. Slots may cross midnight.
+- **By hand**: a light turned off by hand while someone is there stays off until the room is empty. Nothing is turned on while a light of the room is already on by hand (no rule wants it).
+- **Shared lights**: a light of two rooms (the hallway's, from the entrance) stays on while a rule still wants it.
+
 | Option | Default | Description |
 |---|---|---|
-| `room` | required | A room of the rooms table (with `presence`, `light`, optional `illuminance`) |
-| `dark_below` | none | Lux |
+| `room` | required | A room of the rooms table (its `presence`, lights and `illuminance`) |
+| `sensors` | the room's `presence` | Presence/occupancy/motion `binary_sensor`s |
+| `lights` | the room's | The lights turned on and off; any light can be added (the hallway's from the entrance) |
+| `dark_below` | none | Lux, read from the room's `illuminance` |
 | `hysteresis` | `5` | Lux added once on |
-| `off_delay` | `00:00:30` | |
-| `windows` | always | Time windows |
+| `on_after` | `0` | How long a presence must last before the lights turn on |
+| `off_delay` | `00:00:30` | How long the room stays empty before the lights turn off |
+| `transition` | none | Seconds of the fade when the lights turn on and off |
+| `windows` | always | Time windows when the rule turns lights on |
 | `brightness` | light's own | 1–100 % |
 | `brightness_entity` | none | A sensor or number giving the brightness in % (wins over `brightness`) |
+| `slots` | none | `start` and `end` — or `during_naps: true`: while a room of the house has its nap, the hours following the naps — optional `days` (`mon` … `sun`) and `lights`, then `off: true`, or `brightness` / `color` (RGB), and optionally `off_delay` |
+| `not_during_naps` | none | Lights not turned on while a room of the house has its nap (`rooms[].naps`); `true` for all of the rule's lights |
 
 ```yaml
 - id: hallway_presence
   type: presence_light
   room: Hallway
+  sensors: [binary_sensor.hallway_motion, binary_sensor.hallway_occupancy]
   dark_below: 50
+  on_after: 5                    # someone passing by doesn't count
   off_delay: "00:00:30"
+  transition: 1
+  not_during_naps: [light.hallway]   # the bedroom's nap: only the night light
+  slots:
+    - {start: "06:30", end: "08:00", days: [mon, tue, wed, thu, fri], off: true}
+    - {start: "20:00", end: "09:00", lights: [light.hallway_night_light], brightness: 30, color: [0, 0, 255]}
+    - {start: "20:00", end: "09:00", lights: [light.hallway], off: true}
+    - {start: "18:00", end: "23:00", lights: [light.bathroom], off_delay: "00:10:00"}
+    - {during_naps: true, lights: [light.hallway_night_light], brightness: 10}   # follows the naps
 ```
 
 #### `lock_guard` — lock and alarm

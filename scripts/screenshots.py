@@ -151,7 +151,12 @@ ROOMS = {
         "opening": "binary_sensor.living_room_window",
         "climate": "climate.living_room",
     },
-    "Bedroom": {"light": "light.bedroom", "opening": "binary_sensor.bedroom_window", "climate": "climate.bedroom"},
+    "Bedroom": {
+        "light": "light.bedroom",
+        "opening": "binary_sensor.bedroom_window",
+        "climate": "climate.bedroom",
+        "naps": [{"start": "13:30", "end": "15:00"}],
+    },
     "Office": {
         "light": "light.office",
         "presence": "binary_sensor.office_motion",

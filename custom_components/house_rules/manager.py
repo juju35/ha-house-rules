@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
+from homeassistant.const import STATE_ON
 from homeassistant.core import Context, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -19,6 +20,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     COND_ALARM,
     COND_AWAY,
+    COND_NAP,
     COND_QUIET,
     COND_VACATION,
     DEFAULT_SETTINGS,
@@ -31,6 +33,7 @@ from .const import (
     STORAGE_KEY,
     STORAGE_VERSION,
     WATCH_INTERVAL,
+    WEEKDAYS,
 )
 from .schema import validate_config, validate_rule
 from .source import ConfigSource
@@ -304,7 +307,25 @@ class HouseRules:
             return COND_AWAY
         if COND_ALARM in respect and self.alarm_armed():
             return COND_ALARM
+        if COND_NAP in respect and self.napping():
+            return COND_NAP
         return None
+
+    def napping(self) -> list[str]:
+        """The rooms having their nap now: a slot of now, or a nap entity that is on."""
+        now = dt_util.now()
+        day = WEEKDAYS[now.weekday()]
+        return [
+            name
+            for name, room in self.rooms.items()
+            if any(self._nap_now(nap, now, day) for nap in room.get("naps") or [])
+        ]
+
+    def _nap_now(self, nap: str | dict[str, Any], now: datetime, day: str) -> bool:
+        if isinstance(nap, str):
+            state = self.hass.states.get(nap)
+            return state is not None and state.state == STATE_ON
+        return (not nap.get("days") or day in nap["days"]) and in_window(now, nap["start"], nap["end"])
 
     def muted(self, respect: list[str]) -> bool:
         return COND_QUIET in respect and self.quiet()
@@ -315,6 +336,7 @@ class HouseRules:
             "away": self.away(),
             "alarm": self.alarm_armed(),
             "vacation": self.vacation,
+            "napping": self.napping(),
             "people_home": sum(1 for p in self.hass.states.async_all("person") if p.state == "home"),
         }
 

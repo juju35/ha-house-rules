@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
@@ -16,6 +17,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.house_rules.const import DOMAIN
+from custom_components.house_rules.schema import SLOT
 
 SERVICES = [
     ("switch", "turn_on"),
@@ -494,3 +496,249 @@ rules:
     await hass.async_block_till_done()
     assert manager.rules["follow"].lit == ["light.c"]
     assert manager.arbiter.holders("light.a") == set()
+
+
+def _window(minutes_before: int, minutes_after: int) -> tuple[str, str]:
+    now = dt_util.now()
+    return (
+        (now - timedelta(minutes=minutes_before)).strftime("%H:%M"),
+        (now + timedelta(minutes=minutes_after)).strftime("%H:%M"),
+    )
+
+
+async def test_presence_light_sensors_and_on_after(hass: HomeAssistant, calls):
+    for sensor in ("binary_sensor.motion", "binary_sensor.occupancy"):
+        hass.states.async_set(sensor, "off")
+    hass.states.async_set("light.hall", "off")
+    await setup(
+        hass,
+        """
+rooms:
+  Hall: {light: light.hall}
+rules:
+  - id: hall
+    type: presence_light
+    room: Hall
+    sensors: [binary_sensor.motion, binary_sensor.occupancy]
+    on_after: 5
+    transition: 2
+""",
+    )
+    # Someone passing by: gone before 5 s, nothing turns on.
+    hass.states.async_set("binary_sensor.motion", "on")
+    await hass.async_block_till_done()
+    later(hass, 2)
+    hass.states.async_set("binary_sensor.motion", "off")
+    await hass.async_block_till_done()
+    later(hass, 10)
+    await hass.async_block_till_done()
+    assert not calls["light.turn_on"]
+    # The second sensor sees someone who stays.
+    hass.states.async_set("binary_sensor.occupancy", "on")
+    await hass.async_block_till_done()
+    later(hass, 6)
+    await hass.async_block_till_done()
+    assert calls["light.turn_on"][-1].data == {"entity_id": "light.hall", "transition": 2.0}
+
+
+async def test_presence_light_slots(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    for light in ("light.lamp", "light.ceiling"):
+        hass.states.async_set(light, "off")
+    start, end = _window(60, 60)
+    manager = await setup(
+        hass,
+        f"""
+rooms:
+  Hall: {{lights: [light.lamp, light.ceiling], presence: binary_sensor.presence}}
+rules:
+  - id: hall
+    type: presence_light
+    room: Hall
+    off_delay: 30
+    slots:
+      - {{start: "{start}", end: "{end}", lights: [light.ceiling], off: true}}
+      - {{start: "{start}", end: "{end}", lights: [light.lamp], brightness: 20, color: [0, 0, 255], off_delay: 300}}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert [c.data for c in calls["light.turn_on"]] == [
+        {"entity_id": "light.lamp", "brightness_pct": 20, "rgb_color": [0, 0, 255]}
+    ]
+    hass.states.async_set("light.lamp", "on")
+    hass.states.async_set("binary_sensor.presence", "off")
+    await hass.async_block_till_done()
+    later(hass, 60)
+    await hass.async_block_till_done()
+    assert not calls["light.turn_off"], "the slot's delay (5 min), not the rule's (30 s)"
+    later(hass, 300)
+    await hass.async_block_till_done()
+    assert calls["light.turn_off"][-1].data["entity_id"] == "light.lamp"
+    assert not manager.rules["hall"].lit
+
+
+async def test_presence_light_slot_days(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.hall", "off")
+    start, end = _window(60, 60)
+    other_days = [
+        d for i, d in enumerate(("mon", "tue", "wed", "thu", "fri", "sat", "sun")) if i != dt_util.now().weekday()
+    ]
+    await setup(
+        hass,
+        f"""
+rooms:
+  Hall: {{light: light.hall, presence: binary_sensor.presence}}
+rules:
+  - id: hall
+    type: presence_light
+    room: Hall
+    slots:
+      - {{start: "{start}", end: "{end}", days: {other_days}, off: true}}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert calls["light.turn_on"][-1].data["entity_id"] == "light.hall", "the slot is for the other days"
+
+
+async def test_presence_light_off_by_hand_stays_off(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("sensor.lux", "5")
+    hass.states.async_set("light.hall", "off")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Hall: {light: light.hall, presence: binary_sensor.presence, illuminance: sensor.lux}
+rules:
+  - {id: hall, type: presence_light, room: Hall, dark_below: 30, off_delay: 10}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert len(calls["light.turn_on"]) == 1
+    hass.states.async_set("light.hall", "on")
+    await hass.async_block_till_done()
+    # Turned off by hand (a context that isn't ours): not turned back on while someone is there.
+    hass.states.async_set("light.hall", "off")
+    await hass.async_block_till_done()
+    rule = manager.rules["hall"]
+    assert rule.by_hand == {"light.hall"} and not rule.lit
+    hass.states.async_set("sensor.lux", "4")
+    await hass.async_block_till_done()
+    assert len(calls["light.turn_on"]) == 1
+    # Once the room is empty, the next presence turns it on again.
+    hass.states.async_set("binary_sensor.presence", "off")
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert len(calls["light.turn_on"]) == 2
+
+
+async def test_presence_light_leaves_a_room_lit_by_hand(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.lamp", "on")
+    hass.states.async_set("light.ceiling", "off")
+    await setup(
+        hass,
+        """
+rooms:
+  Hall: {lights: [light.lamp, light.ceiling], presence: [binary_sensor.presence]}
+rules:
+  - {id: hall, type: presence_light, room: Hall}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert not calls["light.turn_on"], "the lamp is on by hand: the ceiling light stays off"
+
+
+async def test_presence_light_not_during_naps(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    for light in ("light.hallway", "light.night"):
+        hass.states.async_set(light, "off")
+    start, end = _window(30, 30)
+    manager = await setup(
+        hass,
+        f"""
+rooms:
+  Bedroom:
+    naps: [{{start: "{start}", end: "{end}"}}]
+  Hallway: {{lights: [light.hallway, light.night], presence: binary_sensor.presence}}
+rules:
+  - {{id: hallway, type: presence_light, room: Hallway, not_during_naps: [light.hallway]}}
+""",
+    )
+    assert manager.napping() == ["Bedroom"]
+    assert manager.conditions()["napping"] == ["Bedroom"]
+    # A rule respecting the naps is paused during them.
+    assert manager.blocked_by(["nap"]) == "nap"
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in calls["light.turn_on"]] == ["light.night"]
+
+
+async def test_naps_days(hass: HomeAssistant, calls):
+    start, end = _window(30, 30)
+    days = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+    other = days[(dt_util.now().weekday() + 1) % 7]
+    manager = await setup(
+        hass,
+        f"""
+rooms:
+  Bedroom:
+    naps: [{{start: "{start}", end: "{end}", days: [{other}]}}]
+""",
+    )
+    assert manager.napping() == []
+
+
+async def test_naps_entity(hass: HomeAssistant, calls):
+    # A `schedule` helper (shared with other integrations) or an input_boolean: a nap while it is on.
+    hass.states.async_set("schedule.nap_bedroom", "off")
+    hass.states.async_set("input_boolean.nap", "off")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Bedroom: {naps: [schedule.nap_bedroom, input_boolean.nap]}
+""",
+    )
+    assert manager.napping() == []
+    hass.states.async_set("schedule.nap_bedroom", "on")
+    assert manager.napping() == ["Bedroom"]
+    hass.states.async_set("schedule.nap_bedroom", "off")
+    hass.states.async_set("input_boolean.nap", "on")
+    assert manager.blocked_by(["nap"]) == "nap"
+
+
+async def test_presence_light_slot_during_naps(hass: HomeAssistant, calls):
+    # A slot that follows the naps of the house (here a `schedule` helper): the entrance at 40 % while it is on.
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.entrance", "off")
+    hass.states.async_set("schedule.nap_bedroom", "on")
+    await setup(
+        hass,
+        """
+rooms:
+  Bedroom: {naps: [schedule.nap_bedroom]}
+  Entrance: {lights: [light.entrance], presence: binary_sensor.presence}
+rules:
+  - id: entrance
+    type: presence_light
+    room: Entrance
+    slots:
+      - {during_naps: true, brightness: 40}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert calls["light.turn_on"][-1].data == {"entity_id": "light.entrance", "brightness_pct": 40}
+
+
+def test_slot_needs_hours_or_naps():
+    assert SLOT({"during_naps": True, "brightness": 40})["during_naps"] is True
+    with pytest.raises(vol.Invalid):
+        SLOT({"brightness": 40})

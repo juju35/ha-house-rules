@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from functools import partial
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, Event, callback
+from homeassistant.util import dt as dt_util
 
-from ..const import PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD
+from ..const import PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD, WEEKDAYS
 from .base import UNAVAILABLE, Rule, changed
 
 CLEANING = ("cleaning", "returning")
@@ -164,30 +166,58 @@ class VacuumGuard(Rule):
 
 
 class PresenceLight(Rule):
-    """Presence in a room turns its lights on when it is dark (and in the time windows); off after `off_delay`."""
+    """Presence in a room turns its lights on when it is dark (and in the time windows); off after `off_delay`.
+
+    Several sensors may watch the room (someone is there while one is on), a presence may have to last `on_after`
+    before the lights turn on (someone passing by doesn't count), and time `slots` keep some lights off or set their
+    brightness, colour and delay before off. A light turned off by hand while someone is there stays off until the
+    room is empty; nothing is turned on while a light of the room is already on by hand.
+    """
 
     type = PRESENCE_LIGHT
     depends_on_rooms = True
 
     def __init__(self, *args: Any) -> None:
         super().__init__(*args)
-        self.lit = False
-        self._off: CALLBACK_TYPE | None = None
+        self.claimed: set[str] = set()
+        self.by_hand: set[str] = set()
+        self._off: list[CALLBACK_TYPE] = []
+        self._arm: CALLBACK_TYPE | None = None
+
+    @property
+    def lit(self) -> bool:
+        return bool(self.claimed)
 
     @property
     def room(self) -> dict[str, Any]:
         found = find_room(self.manager.rooms, self.cfg["room"])
         return found[1] if found else {}
 
+    def sensors(self) -> list[str]:
+        if self.cfg.get("sensors"):
+            return list(self.cfg["sensors"])
+        presence = self.room.get("presence") or []
+        return [presence] if isinstance(presence, str) else list(presence)
+
+    def lights(self) -> list[str]:
+        return list(self.cfg.get("lights") or room_lights(self.room))
+
+    def present(self) -> bool:
+        return any(self.value(sensor) == "on" for sensor in self.sensors())
+
     async def async_start(self) -> None:
-        self.track([self.room.get("presence")], self._on_change)
+        self.track(self.sensors(), self._on_change)
         self.track([self.room.get("illuminance")], self._on_light_level)
+        self.track(self.lights(), self._on_light)
 
     async def async_stop(self) -> None:
-        if self.lit:
-            for light in room_lights(self.room):
-                await self.manager.arbiter.release(self.id, light)
-        self.lit = False
+        self._cancel_off()
+        self.cancel_later(self._arm)
+        self._arm = None
+        for light in list(self.claimed):
+            await self.manager.arbiter.release(self.id, light)
+        self.claimed.clear()
+        self.by_hand.clear()
         await super().async_stop()
 
     def dark(self) -> bool:
@@ -208,45 +238,133 @@ class PresenceLight(Rule):
                 return max(1, min(100, int(value)))
         return self.cfg.get("brightness")
 
+    def slot(self, light: str) -> dict[str, Any] | None:
+        """The first slot that applies to `light` now (`during_naps`: while a room of the house has its nap)."""
+        from ..manager import in_window
+
+        now = dt_util.now()
+        day = WEEKDAYS[now.weekday()]
+        for slot in self.cfg.get("slots") or []:
+            if slot.get("days") and day not in slot["days"]:
+                continue
+            if slot.get("lights") and light not in slot["lights"]:
+                continue
+            if bool(self.manager.napping()) if slot.get("during_naps") else in_window(now, slot["start"], slot["end"]):
+                return slot
+        return None
+
+    def nap_lights(self) -> set[str]:
+        """The lights kept off now: a room of the house has its nap (`not_during_naps`: true for all of them)."""
+        keep = self.cfg.get("not_during_naps")
+        if not keep or not self.manager.napping():
+            return set()
+        return set(self.lights()) if keep is True else set(keep)
+
+    def can_light(self) -> bool:
+        return self.active() and self.dark() and self.in_windows()
+
     @callback
-    def _on_change(self, event: Event) -> None:
-        _, new = changed(event)
-        if new is None:
-            return
-        if new.state == "on":
-            self.cancel_later(self._off)
-            self._off = None
-            if not self.lit and self.active() and self.dark() and self.in_windows():
+    def _on_change(self, _event: Event) -> None:
+        if self.present():
+            self._cancel_off()
+            if self.claimed or self._arm or not self.can_light():
+                return
+            delay = self.cfg["on_after"].total_seconds()
+            if delay:
+                self._arm = self.later(delay, self._armed)
+            else:
                 self.hass.async_create_task(self._on())
-        elif new.state == "off" and self.lit:
-            self.cancel_later(self._off)
-            self._off = self.later(self.cfg["off_delay"].total_seconds(), self._release)
+            return
+        # Nobody left: no pending switch-on; the lights turned off by hand may come back next time.
+        self.cancel_later(self._arm)
+        self._arm = None
+        self.by_hand.clear()
+        if self.claimed:
+            self._schedule_off()
+
+    async def _armed(self, _now: datetime) -> None:
+        self._arm = None
+        if self.present() and not self.claimed and self.can_light():
+            await self._on()
 
     @callback
     def _on_light_level(self, _event: Event) -> None:
         """It got dark while someone is in the room."""
-        presence = self.room.get("presence")
-        if not self.lit and self.value(presence) == "on" and self.active() and self.dark() and self.in_windows():
+        if not self.claimed and not self._arm and self.present() and self.can_light():
             self.hass.async_create_task(self._on())
 
+    @callback
+    def _on_light(self, event: Event) -> None:
+        """A light of ours turned off by hand while someone is there stays off until the room is empty."""
+        old, new = changed(event)
+        light = event.data.get("entity_id")
+        if light not in self.claimed or new is None or new.state != "off" or (old and old.state == "off"):
+            return
+        if self.manager.ours(new.context):
+            return
+        self.by_hand.add(light)
+        self.hass.async_create_task(self._forget(light))
+
+    async def _forget(self, light: str) -> None:
+        self.claimed.discard(light)
+        await self.manager.arbiter.release(self.id, light)
+        self.log("light_by_hand", f"{self.cfg['room']} · {self.friendly(light)}", "skipped")
+        if not self.claimed:
+            self.detail = ""
+        self.manager.update()
+
     async def _on(self) -> None:
-        self.lit = True
-        params: dict[str, Any] = {}
-        if (pct := self.brightness()) is not None:
-            params["brightness_pct"] = pct
-        names = [
-            self.friendly(light)
-            for light in room_lights(self.room)
-            if await self.manager.arbiter.claim(self.id, light, **params)
-        ]
+        lights = self.lights()
+        # A light of the room already on by hand (no rule wants it): the room is lit, leave it as it is.
+        if any(self.value(light) == "on" and not self.manager.arbiter.wanted(light) for light in lights):
+            return
+        names = []
+        napping = self.nap_lights()
+        for light in lights:
+            if light in self.by_hand or light in self.claimed or light in napping:
+                continue
+            slot = self.slot(light) or {}
+            if slot.get("off"):
+                continue
+            params: dict[str, Any] = {}
+            pct = slot.get("brightness") or self.brightness()
+            if pct is not None:
+                params["brightness_pct"] = pct
+            if slot.get("color"):
+                params["rgb_color"] = list(slot["color"])
+            if self.cfg.get("transition") is not None:
+                params["transition"] = self.cfg["transition"]
+            self.claimed.add(light)
+            if await self.manager.arbiter.claim(self.id, light, **params):
+                names.append(self.friendly(light))
+        if not self.claimed:
+            return
         self.detail = self.cfg["room"]
         self.log("light_on", f"{self.cfg['room']} · {', '.join(names) or '-'}", "ok")
+        self.manager.update()
 
-    async def _release(self, _now: datetime) -> None:
-        self._off = None
-        self.lit = False
-        for light in room_lights(self.room):
-            if await self.manager.arbiter.release(self.id, light):
+    def _cancel_off(self) -> None:
+        for unsub in self._off:
+            self.cancel_later(unsub)
+        self._off.clear()
+
+    def _schedule_off(self) -> None:
+        """Each lit light goes off after its slot's delay, else the rule's."""
+        self._cancel_off()
+        groups: dict[float, list[str]] = {}
+        for light in self.claimed:
+            delay = (self.slot(light) or {}).get("off_delay") or self.cfg["off_delay"]
+            groups.setdefault(delay.total_seconds(), []).append(light)
+        for seconds, lights in groups.items():
+            self._off.append(self.later(seconds, partial(self._release, lights)))
+
+    async def _release(self, lights: list[str], _now: datetime) -> None:
+        params = {"transition": self.cfg["transition"]} if self.cfg.get("transition") is not None else {}
+        for light in lights:
+            if light not in self.claimed:
+                continue
+            self.claimed.discard(light)
+            if await self.manager.arbiter.release(self.id, light, **params):
                 self.log("light_off", f"{self.cfg['room']} · {self.friendly(light)}", "ok")
             elif self.manager.arbiter.wanted(light):
                 self.log(
@@ -254,7 +372,9 @@ class PresenceLight(Rule):
                     f"{self.friendly(light)} · {', '.join(self.manager.arbiter.holders(light))}",
                     "skipped",
                 )
-        self.detail = ""
+        if not self.claimed:
+            self._off.clear()
+            self.detail = ""
         self.manager.update()
 
     async def async_test(self) -> None:
@@ -267,7 +387,10 @@ class PresenceLight(Rule):
         lux = self.room.get("illuminance")
         return {
             "room": self.cfg["room"],
-            "presence": self.value(self.room.get("presence")),
+            "sensors": self.sensors(),
+            "presence": "on" if self.present() else "off",
             "illuminance": self.number(lux),
             "lit": self.lit,
+            "lights_on": sorted(self.claimed),
+            "by_hand": sorted(self.by_hand),
         }
