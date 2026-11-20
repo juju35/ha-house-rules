@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.3.0';
+const HOUSE_RULES_PANEL_VERSION = '1.3.1';
 
 // Naps of a room as one line: "13:30-15:00; sat,sun 14:00-16:00; schedule.nap_bedroom" (days optional, an on/off
 // entity such as a `schedule` helper shared with other integrations), both ways. A part that doesn't
@@ -2201,6 +2201,11 @@ class HouseRulesPanel extends HTMLElement {
     return `<div class="ico" style="width:${size}px;height:${size}px;background:${bg};color:${fg}"><ha-icon icon="${icon}"></ha-icon></div>`;
   }
 
+  // Unsaved changes: a bar of its own under the tab, sticky at the bottom so it stays in reach (as on System Hub).
+  saveBar(reset, save, resetLabel = this.t('cancel')) {
+    return `<div class="savebar" role="region" aria-label="${hrpEsc(this.t('unsaved'))}"><span class="grow">${hrpEsc(this.t('unsaved'))}</span><button class="btn" data-action="${reset}">${hrpEsc(resetLabel)}</button><button class="btn primary" data-action="${save}">${hrpEsc(this.t('save'))}</button></div>`;
+  }
+
   pill(text, tone) {
     const [fg, bg] = this.tone(tone);
     return `<span class="pill" style="background:${bg};color:${fg}"><span class="dot"></span>${hrpEsc(text)}</span>`;
@@ -2403,7 +2408,7 @@ class HouseRulesPanel extends HTMLElement {
       })
       .join('');
     const dirty = JSON.stringify(rooms) !== JSON.stringify(this._data.rooms || {});
-    return `<div class="stack"><div class="row wrap"><div class="grow"><div class="ttl">${this.t('tabs').rooms}</div><div class="sub">${this.t('rooms_help')}</div></div><button class="btn" data-action="add-room"><ha-icon icon="mdi:plus" style="--mdc-icon-size:16px"></ha-icon>${this.t('add_room')}</button>${dirty ? `<button class="btn" data-action="reset-rooms">${this.t('cancel')}</button><button class="btn primary" data-action="save-rooms">${this.t('save')}</button>` : ''}</div><div class="card scroll"><table>${head}${rows}</table></div></div>`;
+    return `<div class="stack"><div class="row wrap"><div class="grow"><div class="ttl">${this.t('tabs').rooms}</div><div class="sub">${this.t('rooms_help')}</div></div><button class="btn" data-action="add-room"><ha-icon icon="mdi:plus" style="--mdc-icon-size:16px"></ha-icon>${this.t('add_room')}</button></div><div class="card scroll"><table>${head}${rows}</table></div>${dirty ? this.saveBar('reset-rooms', 'save-rooms') : ''}</div>`;
   }
 
   // ---------- tab: journal ----------
@@ -2464,7 +2469,7 @@ class HouseRulesPanel extends HTMLElement {
     const help = file ? this.t('yaml_file_help', { path: y.path || 'house_rules.yaml' }) : this.t('yaml_storage_help');
     const err = y.error ? `<div class="note red">${hrpEsc(y.error)}</div>` : '';
     const inc = file && y.includes ? `<div class="note">${this.t('yaml_includes')}</div>` : '';
-    return `<div class="stack"><div class="row wrap">${this.pill(file ? this.t('source_yaml') : this.t('source_storage'), file ? 'indigo' : 'grey')}<div class="grow sub">${hrpEsc(help)}</div>${dirty ? this.pill(this.t('unsaved'), 'amber') : ''}<button class="btn" data-action="copy">${this.t('copy')}</button>${file ? `${dirty ? `<button class="btn" data-action="yaml-revert">${this.t('revert')}</button>` : ''}<button class="btn primary" data-action="yaml-save" ${dirty ? '' : 'disabled'}>${this.t('save')}</button>` : `<button class="btn primary" data-action="switch-yaml">${this.t('switch_yaml')}</button>`}</div>${inc}${err}<textarea id="hrp-file" class="file" spellcheck="false" ${file ? '' : 'readonly'} aria-label="YAML">${hrpEsc(y.text)}</textarea></div>`;
+    return `<div class="stack"><div class="row wrap">${this.pill(file ? this.t('source_yaml') : this.t('source_storage'), file ? 'indigo' : 'grey')}<div class="grow sub">${hrpEsc(help)}</div><button class="btn" data-action="copy">${this.t('copy')}</button>${file ? '' : `<button class="btn primary" data-action="switch-yaml">${this.t('switch_yaml')}</button>`}</div>${inc}${err}<textarea id="hrp-file" class="file" spellcheck="false" ${file ? '' : 'readonly'} aria-label="YAML">${hrpEsc(y.text)}</textarea>${dirty ? this.saveBar('yaml-revert', 'yaml-save', this.t('revert')) : ''}</div>`;
   }
 
   async loadYaml() {
@@ -2534,10 +2539,9 @@ class HouseRulesPanel extends HTMLElement {
         ${row(this.t('alarm'), '', `<input class="cell" id="set-alarm" value="${hrpEsc(s.alarm || '')}" placeholder="alarm_control_panel.…" aria-label="${this.t('alarm')}">`)}
         ${row(this.t('notify'), '', `<input class="cell" id="set-notify" value="${hrpEsc(s.notify || '')}" placeholder="notify.…" aria-label="${this.t('notify')}">`)}
         ${row(this.t('repairs'), '', `<label class="sw"><input type="checkbox" id="set-repairs" ${s.repairs !== false ? 'checked' : ''} aria-label="${this.t('repairs')}"><span></span></label>`)}
-        ${dirty ? `<div class="row end"><button class="btn" data-action="reset-settings">${this.t('cancel')}</button><button class="btn primary" data-action="save-settings">${this.t('save')}</button></div>` : ''}
       </section>
       <section class="card pad"><div class="row">${this.icon('mdi:import', 'indigo')}<div class="ttl">${this.t('import')}</div></div><p class="sub small">${this.t('import_help')}</p>${importBody}</section>
-    </div>`;
+    </div>${dirty ? this.saveBar('reset-settings', 'save-settings') : ''}`;
   }
 
   dialog() {
@@ -2840,6 +2844,9 @@ const HRP_CSS = `
   h2 { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); margin: 0 0 8px; }
   section { display: flex; flex-direction: column; gap: 8px; }
   .stack { display: flex; flex-direction: column; gap: 16px; }
+  .savebar { position: sticky; bottom: 12px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 14px; border-radius: 12px; background: var(--ha-card-background, var(--card-background-color, #fff)); box-shadow: 0 4px 16px rgba(0, 0, 0, .18); border: 1px solid color-mix(in srgb, var(--primary-color) 40%, transparent); }
+  .stack > .savebar { margin-top: 0; }
+  .savebar .grow { font-size: 14px; font-weight: 500; }
   .cols { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
   .main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
   .side { flex: 1 1 320px; min-width: 0; padding: 16px; }
