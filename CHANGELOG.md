@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 - 2026-11-21
+
+### Features
+- `vacuum_follow`: a new `on_dock` option, actions (as in a script) run when the robot is back at its base after a run — e.g. the settings of its next run. Not after a restart (unavailable → docked) nor on an attribute update.
+- Rooms: a new `aliases` option, other names of the room (case-insensitive) — the vacuum's current-room sensor may name it otherwise than the room's name.
+
+### Fixes
+- Notifications sent while Home Assistant starts wait (up to 2 minutes) for their notify service, which another integration may not have set up yet, instead of failing with "Action not found".
+- Saving a rule from the panel no longer makes Home Assistant report blocking calls (`glob`, `scandir`) inside the event loop: the rule's YAML is parsed in the executor.
+
 ## 1.5.0 - 2026-11-21
 
 ### Features

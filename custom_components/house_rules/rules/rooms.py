@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime
 from functools import partial
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, Event, callback
+from homeassistant.helpers.script import Script
 from homeassistant.util import dt as dt_util
 
-from ..const import PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD, WEEKDAYS
+from ..const import DOMAIN, PRESENCE_LIGHT, ST_ACTIVE, ST_ARMED, ST_IDLE, VACUUM_FOLLOW, VACUUM_GUARD, WEEKDAYS
 from .base import UNAVAILABLE, Rule, changed
+
+_LOGGER = logging.getLogger(__name__)
 
 NAP_CHECK = 60  # Seconds between two checks for a nap slot that starts (a nap entity is followed at once).
 
@@ -35,13 +39,17 @@ def room_openings(room: dict[str, Any] | None) -> list[str]:
 
 
 def find_room(rooms: dict[str, Any], name: str | None) -> tuple[str, dict[str, Any]] | None:
-    """A room by name, case and accents as written, else case-insensitive."""
+    """A room by name, case and accents as written, else case-insensitive, else by one of its `aliases`."""
     if not name:
         return None
     if name in rooms:
         return name, rooms[name]
+    wanted = name.casefold()
     for key, value in rooms.items():
-        if key.casefold() == name.casefold():
+        if key.casefold() == wanted:
+            return key, value
+    for key, value in rooms.items():
+        if any(str(alias).casefold() == wanted for alias in (value or {}).get("aliases") or []):
             return key, value
     return None
 
@@ -60,7 +68,19 @@ class VacuumFollow(Rule):
         self._lock = asyncio.Lock()
 
     async def async_start(self) -> None:
+        self.on_dock: Script | None = None
+        if self.cfg.get("on_dock"):
+            self.on_dock = Script(self.hass, self.cfg["on_dock"], f"{self.name} (on_dock)", DOMAIN)
         self.track([self.cfg["room_sensor"], self.cfg["vacuum"]], self._on_change)
+
+    async def _docked(self) -> None:
+        """The robot came back to its base: run `on_dock` (settings for the next run…)."""
+        if self.on_dock is None or not self.active():
+            return
+        try:
+            await self.on_dock.async_run(context=self.manager.context())
+        except Exception as err:  # noqa: BLE001 - a failed action must not break the rule
+            _LOGGER.warning("%s: on_dock failed: %s", self.id, err)
 
     async def async_stop(self) -> None:
         for light in list(self.lit):
@@ -77,12 +97,15 @@ class VacuumFollow(Rule):
 
     @callback
     def _on_change(self, event: Event) -> None:
-        _, new = changed(event)
+        old, new = changed(event)
         if new is None:
             return
         if new.entity_id == self.cfg["vacuum"]:
             if new.state == "docked" and self.cfg["off_at_dock"]:
                 self.hass.async_create_task(self._move(None))
+            # Back from a run only: not a restart (unavailable -> docked) nor an attribute update.
+            if new.state == "docked" and old is not None and old.state not in ("docked", *UNAVAILABLE):
+                self.hass.async_create_task(self._docked())
             return
         if self.value(self.cfg["vacuum"]) in CLEANING and new.state not in UNAVAILABLE:
             self.hass.async_create_task(self._move(new.state))
