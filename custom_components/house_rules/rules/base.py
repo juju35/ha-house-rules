@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callback
+from homeassistant.exceptions import TemplateError
+from homeassistant.helpers import condition
 from homeassistant.helpers import label_registry as lr
 from homeassistant.helpers.entity_registry import async_entries_for_label
 from homeassistant.helpers.entity_registry import async_get as async_get_er
@@ -17,6 +19,7 @@ from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
 )
+from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN, ST_ARMED, ST_DISABLED, ST_SNOOZED
@@ -47,6 +50,7 @@ class Rule:
         self._unsubs: list[CALLBACK_TYPE] = []
         self.last_run: float | None = None
         self.detail = ""
+        self._conditions: Callable[[Any], bool] | None = None
 
     # ---------- persistent per-rule state ----------
     @property
@@ -86,7 +90,7 @@ class Rule:
         """The rule may act now: enabled, not snoozed, no respected condition stopping it."""
         if not self.enabled or self.snoozed_until:
             return False
-        return self.manager.blocked_by(self.respect) is None
+        return self.manager.blocked_by(self.respect) is None and self.conditions_hold()
 
     def in_windows(self) -> bool:
         """Now within the rule's `windows` (none: always)."""
@@ -155,10 +159,51 @@ class Rule:
         st = self.state(entity)
         return (st.attributes.get("friendly_name") if st else None) or (entity or "")
 
-    async def notify(self, title: str | None, message: str, critical: bool = False) -> bool:
+    async def notify(self, title: str | None, message: str, critical: bool = False, **variables: Any) -> bool:
+        """Notify with the rule's target, picture, icon and link; `message` may be a template (`variables`)."""
+        message = self.render(message, variables)
+        quiet = self.cfg.get("quiet_notify") if self.manager.quiet() else None
         return await self.manager.notify(
-            self.cfg.get("notify"), title or self.name, message, critical, tag=f"{DOMAIN}_{self.id}"
+            quiet or self.cfg.get("notify"),
+            title or self.name,
+            message,
+            critical,
+            tag=f"{DOMAIN}_{self.id}",
+            options=self.cfg,
         )
+
+    def render(self, text: str, variables: dict[str, Any]) -> str:
+        """A message with `{{ … }}` / `{% … %}`: rendered with the rule's variables; the raw text if it fails."""
+        if "{{" not in text and "{%" not in text:
+            return text
+        values = {"rule": self.name, "detail": self.detail, **variables}
+        try:
+            return str(Template(text, self.hass).async_render(values, parse_result=False))
+        except TemplateError as err:
+            _LOGGER.warning("%s: message template failed: %s", self.id, err)
+            return text
+
+    async def async_setup_conditions(self) -> None:
+        """Build the rule's `conditions` (Home Assistant conditions) before it starts."""
+        self._conditions = None
+        if not self.cfg.get("conditions"):
+            return
+        try:
+            config = await condition.async_validate_conditions_config(self.hass, self.cfg["conditions"])
+            self._conditions = await condition.async_conditions_from_config(self.hass, config, _LOGGER, self.name)
+        except Exception as err:  # noqa: BLE001 - invalid conditions keep the rule from acting
+            _LOGGER.warning("%s: invalid conditions, the rule will not act: %s", self.id, err)
+            self._conditions = lambda _variables: False
+
+    def conditions_hold(self) -> bool:
+        checker = self._conditions
+        if checker is None:
+            return True
+        try:
+            return bool(checker({}))
+        except Exception as err:  # noqa: BLE001 - a broken condition stops the rule, never the integration
+            _LOGGER.warning("%s: conditions failed: %s", self.id, err)
+            return False
 
     # ---------- what the rule shows ----------
     def current_state(self) -> str:

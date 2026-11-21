@@ -845,3 +845,96 @@ async def test_notify_waits_for_its_service_during_startup(hass: HomeAssistant, 
         assert await manager.notify(None, "Title", "Message")
     assert sent[0][0].data["message"] == "Message"
     hass.set_state(CoreState.running)
+
+
+async def test_notification_options_quiet_target_and_template(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.door", "off", {"friendly_name": "Door"})
+    manager = await setup(
+        hass,
+        """
+settings: {notify: notify.phone, quiet_hours: {start: "00:00", end: "00:00:01"}}
+rules:
+  - id: door
+    type: sensor_flash
+    trigger: {entity_id: binary_sensor.door}
+    lights: []
+    message: "{{ entity }} is open ({{ rule }})"
+    quiet_notify: notify.night
+    image: /local/door.png
+    icon: mdi:door
+    url: /lovelace/doors
+    data: {group: doors, push: {sound: {volume: 0}}}
+""",
+    )
+    night = async_mock_service(hass, "notify", "night")
+    rule = manager.rules["door"]
+    with patch.object(type(manager), "quiet", return_value=False):
+        assert await rule.notify(None, rule.cfg["message"], True, entity="Door")
+    sent = calls["notify.phone"][-1].data
+    assert sent["message"] == "Door is open (Door)"
+    assert sent["data"]["url"] == "/lovelace/doors"
+    assert sent["data"]["image"] == sent["data"]["attachment"]["url"] == "/local/door.png"
+    assert sent["data"]["notification_icon"] == "mdi:door"
+    assert sent["data"]["group"] == "doors"
+    # data merged into the critical push, key by key.
+    assert sent["data"]["push"]["interruption-level"] == "critical"
+    assert sent["data"]["push"]["sound"] == {"name": "default", "critical": 1, "volume": 0}
+    with patch.object(type(manager), "quiet", return_value=True):
+        assert await rule.notify(None, "{{ broken", entity="Door")
+    assert night[-1].data["message"] == "{{ broken"  # a template that fails: the raw text
+
+
+async def test_settings_quiet_notify_and_rule_conditions(hass: HomeAssistant, calls):
+    hass.states.async_set("sensor.state", "cleaning")
+    hass.states.async_set("sensor.battery", "100")
+    manager = await setup(
+        hass,
+        """
+settings: {notify: notify.phone, quiet_notify: notify.night}
+rules:
+  - id: done
+    type: cycle_done
+    state_entity: sensor.state
+    done_states: [charging]
+    message: Clean it
+    critical: true
+    conditions:
+      - condition: numeric_state
+        entity_id: sensor.battery
+        below: 100
+""",
+    )
+    night = async_mock_service(hass, "notify", "night")
+    hass.states.async_set("sensor.state", "charging")  # battery full: the condition stops it
+    await hass.async_block_till_done()
+    assert not calls["notify.phone"]
+    hass.states.async_set("sensor.state", "cleaning")
+    hass.states.async_set("sensor.battery", "40")
+    hass.states.async_set("sensor.state", "charging")
+    await hass.async_block_till_done()
+    sent = calls["notify.phone"][-1].data
+    assert sent["message"] == "Clean it"
+    assert sent["data"]["push"]["interruption-level"] == "critical"
+    with patch.object(type(manager), "quiet", return_value=True):
+        await manager.rules["done"].notify(None, "Night")
+    assert night[-1].data["message"] == "Night"
+
+
+async def test_invalid_conditions_keep_the_rule_from_acting(hass: HomeAssistant, calls):
+    manager = await setup(
+        hass,
+        """
+settings: {notify: notify.phone}
+rules:
+  - id: done
+    type: cycle_done
+    state_entity: sensor.state
+    done_states: [charging]
+    conditions:
+      - condition: device
+        device_id: missing
+        domain: nothing
+        type: is_on
+""",
+    )
+    assert manager.rules["done"].active() is False

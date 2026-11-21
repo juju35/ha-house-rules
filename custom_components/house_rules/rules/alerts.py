@@ -164,7 +164,7 @@ class SensorFlash(Rule):
         self.detail = self.friendly(self.trigger.entity)
         self.flasher.start()  # waits out the quiet hours by itself
         if self.cfg.get("message"):
-            await self.notify(None, self.cfg["message"], self.cfg.get("critical", False))
+            await self.notify(None, self.cfg["message"], self.cfg.get("critical", False), entity=self.detail)
         self.log("alert", f"{self.detail} · {', '.join(self.friendly(x) for x in self.cfg['lights'])}", "active")
 
     async def _escalate(self, index: int, _now: datetime) -> None:
@@ -177,7 +177,11 @@ class SensorFlash(Rule):
             await play(self, step["chime"], step.get("media"), None)
         if step.get("notify"):
             await self.notify(
-                None, step.get("message") or self.cfg.get("message") or self.detail, step["notify"] == "critical"
+                None,
+                step.get("message") or self.cfg.get("message") or self.detail,
+                step["notify"] == "critical",
+                entity=self.detail,
+                level=self.level,
             )
         self.log("escalation", f"{self.detail} · level {self.level}", "active")
         self.manager.update()
@@ -343,7 +347,7 @@ class LeakGuard(Rule):
         self.flasher.start()
         if not self.muted() and self.cfg.get("chime"):
             await play(self, self.cfg["chime"], self.cfg.get("media"), None)
-        await self.notify(None, self.cfg.get("message") or where, self.cfg.get("critical", True))
+        await self.notify(None, self.cfg.get("message") or where, self.cfg.get("critical", True), sensors=where)
         self.log("leak", f"{where} · {len(self.cfg['cut'])} cut", "active")
 
     async def _dry(self) -> None:

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.0 - 2026-11-21
+
+### Features
+- Notifications: a rule's `quiet_notify` (and `settings.quiet_notify`) is the target during the quiet hours — e.g. one phone at night instead of the family.
+- Notifications: `image` (Android image + iOS attachment), `icon`, `url` (opened on tap) and `data` (any other notification data, merged key by key) on every rule.
+- Messages may be templates, with the rule's variables: `rule`, `detail`, and per type `entity` / `level` (`sensor_flash`), `sensors` (`leak_guard`), `room` / `openings` (`vacuum_guard`), `entity` / `progress` / `attempt` (`appliance_resume`, which gets a `message` option). A template that fails sends the raw text.
+- Every rule takes `conditions` (Home Assistant conditions, as in an automation): it acts only while they hold. Invalid conditions keep the rule from acting.
+- `cycle_done`: `critical` option.
+
 ## 1.6.0 - 2026-11-21
 
 ### Features

@@ -198,6 +198,7 @@ class HouseRules:
                 await current.async_stop()
             rule = build_rule(self, cfg, raw_by_id.get(rid, cfg))
             self.rules[rid] = rule
+            await rule.async_setup_conditions()
             await rule.async_start()
             changed.append(rid)
         # Keep the panel's order.
@@ -367,18 +368,37 @@ class HouseRules:
         return True
 
     async def notify(
-        self, target: str | None, title: str, message: str, critical: bool = False, tag: str | None = None
+        self,
+        target: str | None,
+        title: str,
+        message: str,
+        critical: bool = False,
+        tag: str | None = None,
+        options: dict[str, Any] | None = None,
     ) -> bool:
+        """Send a notification. `options`: a rule's image / icon / url / data."""
+        options = options or {}
+        if not target and self.quiet():
+            target = self.settings.get("quiet_notify")
         target = target or self.settings.get("notify")
         if not target:
             return False
         service = target.removeprefix("notify.")
         data: dict[str, Any] = {"title": title, "message": message}
         # One tag per rule: a rule's next notification replaces its previous one, never another rule's.
-        extra: dict[str, Any] = {"url": f"/{DOMAIN.replace('_', '-')}/activity", "tag": tag or DOMAIN}
+        extra: dict[str, Any] = {
+            "url": options.get("url") or f"/{DOMAIN.replace('_', '-')}/activity",
+            "tag": tag or DOMAIN,
+        }
         if critical:
             extra["push"] = {"interruption-level": "critical", "sound": {"name": "default", "critical": 1, "volume": 1}}
-        data["data"] = extra
+        if image := options.get("image"):
+            # iOS shows the attachment, Android the image.
+            extra["image"] = image
+            extra["attachment"] = {"url": image}
+        if icon := options.get("icon"):
+            extra["notification_icon"] = icon
+        data["data"] = deep_merge(extra, options.get("data") or {})
         # While Home Assistant starts, the target (another integration's notify service) may not be there yet:
         # wait for it a little rather than lose the notification.
         for _ in range(NOTIFY_WAIT):
@@ -451,3 +471,11 @@ def _as_time(value: Any) -> Any:
     if isinstance(value, str):
         return dt_util.parse_time(value)
     return value
+
+
+def deep_merge(base: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
+    """`base` with `extra` merged in, nested dicts merged key by key (extra wins)."""
+    out = dict(base)
+    for key, value in extra.items():
+        out[key] = deep_merge(out[key], value) if isinstance(value, dict) and isinstance(out.get(key), dict) else value
+    return out

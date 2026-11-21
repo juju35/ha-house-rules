@@ -159,6 +159,7 @@ rules: !include_dir_merge_list house_rules/
 |---|---|---|
 | `quiet_hours` | `{start: "00:00", end: "08:00"}` | Window (may cross midnight) in which the rules that respect `quiet_hours` neither light nor ring: they only notify. `null`: no quiet hours |
 | `notify` | none | Default notification target (`notify.family` or `family`); a rule can set its own `notify:` |
+| `quiet_notify` | none | Target during the quiet hours, for the rules without their own `notify` / `quiet_notify` |
 | `alarm` | none | `alarm_control_panel` used by the `alarm` condition |
 | `repairs` | `true` | Create a repair when a rule gives up |
 
@@ -208,6 +209,27 @@ rooms:
 | `enabled` | `true` | `false` pauses the rule; the rule's switch writes it |
 | `respect` | `[]` | Global conditions the rule respects: `quiet_hours`, `away`, `alarm`, `vacation`, `nap` (a room of the house has its nap) |
 | `notify` | `settings.notify` | Notification target of this rule |
+| `quiet_notify` | `settings.quiet_notify` | Target of this rule during the quiet hours (e.g. only one phone at night) |
+| `image` | none | Picture of the notifications (`/local/…`): `image` (Android) and `attachment` (iOS) |
+| `icon` | none | Icon of the notifications (`mdi:…`, Android) |
+| `url` | the House Rules panel | Opened when the notification is tapped (`/lovelace/…`) |
+| `data` | none | Any other notification data, merged as is (nested keys merged one by one, e.g. `push: {sound: {volume: 0}}`) |
+| `conditions` | none | Home Assistant conditions (as in an automation): the rule acts only while they all hold |
+| `message` | per type | Where a type has one, it may be a template: `{{ rule }}`, `{{ detail }}`, plus the variables of the type (below) |
+
+Message variables: `sensor_flash` → `entity` (and `level` in escalations); `leak_guard` → `sensors`; `vacuum_guard` → `room`, `openings`; `appliance_resume` → `entity`, `progress`, `attempt`.
+
+```yaml
+- id: lock_open
+  type: sensor_flash
+  trigger: {entity_id: lock.front_door, to: unlocked, for: "00:02:00"}
+  lights: [light.hall_nightlight]
+  message: "{{ entity }} has been unlocked for 2 minutes"
+  critical: true
+  quiet_notify: notify.mobile_app_my_phone
+  image: /local/images/lock.png
+  url: /lovelace/security
+```
 
 Durations take `"HH:MM:SS"` or a number of seconds; times of day take `"HH:MM"`.
 
@@ -316,6 +338,7 @@ When the programme's progress becomes unavailable (the appliance lost power) —
 | `delay` | `00:00:05` | Wait before powering back on |
 | `max_attempts` | `2` | Per programme |
 | `power_on_at` | none | Daily power-on time |
+| `message` | switch · % · attempt | Notification text (template: `entity`, `progress`, `attempt`) |
 
 ```yaml
 - id: dishwasher
@@ -340,6 +363,7 @@ By power: running above `start_above`, done once below `done_below` for `done_fo
 | `reminder` | none | Interval of the reminders |
 | `max_reminders` | `3` | |
 | `message` | rule name | Notification text |
+| `critical` | `false` | Critical notification (sound even when muted) |
 
 ```yaml
 - id: washing_machine
