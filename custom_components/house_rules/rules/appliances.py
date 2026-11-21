@@ -73,7 +73,14 @@ class ApplianceResume(Rule):
         self.data["attempts"] = attempts + 1
         ok = await self.manager.call("homeassistant", "turn_on", {"entity_id": switch})
         detail = f"{self.friendly(switch)} · {last:.0f} % · {attempts + 1}/{self.cfg['max_attempts']}"
-        await self.notify(None, detail, critical=True)
+        await self.notify(
+            None,
+            self.cfg.get("message") or detail,
+            critical=True,
+            entity=self.friendly(switch),
+            progress=round(last),
+            attempt=attempts + 1,
+        )
         self.log("resumed", detail, "ok" if ok else "failed")
 
     async def _scheduled(self, _now: datetime) -> None:
@@ -172,7 +179,7 @@ class CycleDone(Rule):
         self.data["done_at"] = dt_util.utcnow().timestamp()
         self._set_phase("done" if self.cfg.get("door") else "idle")
         if self.active():
-            await self.notify(None, self.cfg.get("message") or self.name)
+            await self.notify(None, self.cfg.get("message") or self.name, self.cfg["critical"])
         self.log("done", self.name, "ok")
         if self.cfg.get("reminder") and self.cfg.get("door"):
             self.later(self.cfg["reminder"].total_seconds(), self._remind)
@@ -185,12 +192,12 @@ class CycleDone(Rule):
             return
         self.data["reminders"] = count + 1
         if self.active():
-            await self.notify(None, self.cfg.get("message") or self.name)
+            await self.notify(None, self.cfg.get("message") or self.name, self.cfg["critical"])
         self.log("reminder", f"{count + 1}/{self.cfg['max_reminders']}", "ok")
         self.later(self.cfg["reminder"].total_seconds(), self._remind)
 
     async def async_test(self) -> None:
-        await self.notify(None, self.cfg.get("message") or self.name)
+        await self.notify(None, self.cfg.get("message") or self.name, self.cfg["critical"])
         self.log("test", "notification", "ok")
 
     async def async_cancel(self) -> None:

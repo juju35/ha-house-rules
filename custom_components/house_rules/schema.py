@@ -115,6 +115,15 @@ COMMON = {
     vol.Optional("enabled", default=True): cv.boolean,
     vol.Optional("respect", default=list): RESPECT,
     vol.Optional("notify"): cv.string,
+    # Notification target while the quiet hours run (overrides `notify` / settings' `quiet_notify`).
+    vol.Optional("quiet_notify"): cv.string,
+    # The rule's notifications: picture, icon, link, and any other data merged as is.
+    vol.Optional("image"): cv.string,
+    vol.Optional("icon"): cv.icon,
+    vol.Optional("url"): cv.string,
+    vol.Optional("data"): dict,
+    # Home Assistant conditions: the rule acts only while they hold.
+    vol.Optional("conditions"): cv.CONDITIONS_SCHEMA,
 }
 
 TYPE_SCHEMAS: dict[str, vol.Schema] = {
@@ -177,6 +186,7 @@ TYPE_SCHEMAS: dict[str, vol.Schema] = {
             vol.Optional("delay", default="00:00:05"): DURATION,
             vol.Optional("max_attempts", default=2): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
             vol.Optional("power_on_at"): TIME,
+            vol.Optional("message"): cv.string,
         }
     ),
     CYCLE_DONE: vol.Schema(
@@ -192,6 +202,7 @@ TYPE_SCHEMAS: dict[str, vol.Schema] = {
             vol.Optional("reminder"): DURATION,
             vol.Optional("max_reminders", default=3): vol.All(vol.Coerce(int), vol.Range(min=0, max=20)),
             vol.Optional("message"): cv.string,
+            vol.Optional("critical", default=False): cv.boolean,
         }
     ),
     VACUUM_FOLLOW: vol.Schema(
@@ -289,6 +300,7 @@ SETTINGS = vol.Schema(
     {
         vol.Optional("quiet_hours"): vol.Any(None, WINDOW),
         vol.Optional("notify"): vol.Any(None, cv.string),
+        vol.Optional("quiet_notify"): vol.Any(None, cv.string),
         vol.Optional("alarm"): vol.Any(None, cv.entity_id),
         vol.Optional("repairs", default=True): cv.boolean,
     },

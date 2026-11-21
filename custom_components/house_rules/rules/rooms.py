@@ -177,7 +177,13 @@ class VacuumGuard(Rule):
             return
         ok = await self.manager.call("vacuum", "return_to_base", {"entity_id": self.cfg["vacuum"]})
         detail = f"{room} · {', '.join(self.friendly(o) for o in open_)}"
-        await self.notify(None, self.cfg.get("message") or detail, critical=True)
+        await self.notify(
+            None,
+            self.cfg.get("message") or detail,
+            critical=True,
+            room=room,
+            openings=", ".join(self.friendly(o) for o in open_),
+        )
         self.log("returned", detail, "ok" if ok else "failed")
 
     async def async_test(self) -> None:
