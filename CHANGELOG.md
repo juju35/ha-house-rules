@@ -8,6 +8,7 @@
 
 ### Fixes
 - Notifications sent while Home Assistant starts wait (up to 2 minutes) for their notify service, which another integration may not have set up yet, instead of failing with "Action not found".
+- Saving a rule from the panel no longer makes Home Assistant report blocking calls (`glob`, `scandir`) inside the event loop: the rule's YAML is parsed in the executor.
 
 ## 1.5.0 - 2026-11-21
 

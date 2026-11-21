@@ -193,7 +193,8 @@ async def ws_rule_save(hass: HomeAssistant, connection: websocket_api.ActiveConn
     async def job() -> None:
         rule = msg.get("rule")
         if rule is None:
-            rule = _parse(msg.get("yaml") or "")
+            # ruamel looks for its plug-ins on disk when a YAML() is made: off the event loop.
+            rule = await connection.hass.async_add_executor_job(_parse, msg.get("yaml") or "")
             if not isinstance(rule, dict):
                 raise vol.Invalid("a rule is a mapping")
             msg["rule"] = rule
