@@ -175,6 +175,7 @@ Room names are the ones the vacuum's current-room sensor reports (for `vacuum_fo
 | `illuminance` | Light level sensor (`dark_below` of `vacuum_follow` / `presence_light`) |
 | `naps` | Naps of the room: slots (`start`, `end` and optionally `days`, `mon` … `sun`, every day when none) and/or on/off entities (a nap while one is on: a `schedule` helper, an `input_boolean`…). While a room of the house has its nap, the rules that respect `nap` are paused and `presence_light` keeps its `not_during_naps` lights off. In the Rooms tab: room → Naps, **+ Nap** (from, until, days) or **+ Nap schedule** (an entity) |
 | `area` | The room's Home Assistant area: the Rooms tab's **Discover** fills the room from it |
+| `aliases` | Other names of the room, e.g. the one the vacuum's current-room sensor reports when it differs (case-insensitive). YAML only |
 
 ##### Naps shared with other integrations
 
@@ -365,12 +366,17 @@ While the robot cleans, the light(s) of the room it is in (from the rooms table)
 | `transition` | `10` | Seconds |
 | `dark_below` | none | Lux: only when the room's `illuminance` is below |
 | `off_at_dock` | `true` | Turn its lights off when docked |
+| `on_dock` | none | Actions (as in a script) run when the robot is back at its base after a run — not after a restart — e.g. the settings of its next run. YAML only |
 
 ```yaml
 - id: vacuum_lights
   type: vacuum_follow
   vacuum: vacuum.robot
   room_sensor: sensor.robot_current_room
+  on_dock:
+    - action: vacuum.set_fan_speed
+      target: {entity_id: vacuum.robot}
+      data: {fan_speed: turbo}
 ```
 
 #### `vacuum_guard` — back to base when the room is open

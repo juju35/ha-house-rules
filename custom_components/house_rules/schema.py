@@ -202,6 +202,8 @@ TYPE_SCHEMAS: dict[str, vol.Schema] = {
             vol.Optional("transition", default=10): vol.All(vol.Coerce(float), vol.Range(min=0, max=300)),
             vol.Optional("dark_below"): vol.Coerce(float),
             vol.Optional("off_at_dock", default=True): cv.boolean,
+            # Actions run when the robot is back at its base (settings for its next run…).
+            vol.Optional("on_dock"): cv.SCRIPT_SCHEMA,
         }
     ),
     VACUUM_GUARD: vol.Schema(
@@ -277,6 +279,8 @@ ROOM = vol.Schema(
         vol.Optional("naps", default=list): vol.All(cv.ensure_list, [NAP]),
         # The Home Assistant area of the room (the Rooms tab finds its entities there).
         vol.Optional("area"): cv.string,
+        # Other names of the room (the vacuum's room sensor may call it otherwise than the room's name).
+        vol.Optional("aliases", default=list): vol.All(cv.ensure_list, [cv.string]),
     },
     extra=vol.ALLOW_EXTRA,
 )

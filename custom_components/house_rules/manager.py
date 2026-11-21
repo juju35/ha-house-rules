@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import logging
 from collections import deque
@@ -10,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.const import STATE_ON
-from homeassistant.core import Context, HomeAssistant, callback
+from homeassistant.core import Context, CoreState, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_time_interval
@@ -42,6 +43,8 @@ if TYPE_CHECKING:
     from .rules.base import Rule
 
 _LOGGER = logging.getLogger(__name__)
+
+NOTIFY_WAIT = 120  # Seconds a notification waits, during startup, for its notify service to appear.
 
 
 def in_window(now: datetime, start: Any, end: Any) -> bool:
@@ -376,6 +379,12 @@ class HouseRules:
         if critical:
             extra["push"] = {"interruption-level": "critical", "sound": {"name": "default", "critical": 1, "volume": 1}}
         data["data"] = extra
+        # While Home Assistant starts, the target (another integration's notify service) may not be there yet:
+        # wait for it a little rather than lose the notification.
+        for _ in range(NOTIFY_WAIT):
+            if self.hass.state is CoreState.running or self.hass.services.has_service("notify", service):
+                break
+            await asyncio.sleep(1)
         return await self.call("notify", service, data)
 
     # ---------- journal ----------

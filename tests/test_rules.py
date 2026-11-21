@@ -5,10 +5,11 @@ from __future__ import annotations
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 import voluptuous as vol
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -775,3 +776,72 @@ async def test_room_area_key(hass: HomeAssistant, calls):
     manager = await setup(hass, "rooms:\n  Hall: {lights: [light.hall], area: hall}\n")
     assert manager.rooms["Hall"]["area"] == "hall"
     assert not manager.errors
+
+
+async def test_vacuum_follow_on_dock_runs_after_a_run_only(hass: HomeAssistant, calls):
+    hass.states.async_set("vacuum.robot", "unavailable")
+    hass.states.async_set("sensor.room", "Hall")
+    await setup(
+        hass,
+        """
+rooms:
+  Kitchen: {light: light.kitchen}
+rules:
+  - id: follow
+    type: vacuum_follow
+    vacuum: vacuum.robot
+    room_sensor: sensor.room
+    on_dock:
+      - action: switch.turn_on
+        target: {entity_id: switch.mop_mode}
+""",
+    )
+    hass.states.async_set("vacuum.robot", "docked")  # back after a restart: not a run
+    await hass.async_block_till_done()
+    assert not calls["switch.turn_on"]
+    hass.states.async_set("vacuum.robot", "cleaning")
+    await hass.async_block_till_done()
+    hass.states.async_set("vacuum.robot", "docked")
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in calls["switch.turn_on"]] == [["switch.mop_mode"]]
+    hass.states.async_set("vacuum.robot", "docked", {"battery_level": 90})  # attributes only
+    await hass.async_block_till_done()
+    assert len(calls["switch.turn_on"]) == 1
+
+
+async def test_rooms_found_by_alias(hass: HomeAssistant, calls):
+    hass.states.async_set("vacuum.robot", "cleaning")
+    hass.states.async_set("sensor.room", "Hall")
+    hass.states.async_set("light.kids", "off")
+    await setup(
+        hass,
+        """
+rooms:
+  Kids room: {light: light.kids, aliases: [Room 3]}
+rules:
+  - id: follow
+    type: vacuum_follow
+    vacuum: vacuum.robot
+    room_sensor: sensor.room
+""",
+    )
+    hass.states.async_set("sensor.room", "room 3")
+    await hass.async_block_till_done()
+    assert calls["light.turn_on"][-1].data["entity_id"] == "light.kids"
+
+
+async def test_notify_waits_for_its_service_during_startup(hass: HomeAssistant, calls):
+    manager = await setup(hass, "settings: {notify: notify.late}\nrules: []\n")
+    hass.set_state(CoreState.starting)
+    with patch("custom_components.house_rules.manager.asyncio.sleep") as sleep:
+        sent = []
+
+        async def tick(_seconds: float) -> None:
+            # The notify service of another integration appears while Home Assistant starts.
+            if len(sleep.mock_calls) == 3:
+                sent.extend([async_mock_service(hass, "notify", "late")])
+
+        sleep.side_effect = tick
+        assert await manager.notify(None, "Title", "Message")
+    assert sent[0][0].data["message"] == "Message"
+    hass.set_state(CoreState.running)
