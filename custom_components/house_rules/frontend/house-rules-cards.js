@@ -1755,6 +1755,6 @@ const HR_CARDS = [
 window.customCards = window.customCards || [];
 for (const [tag, cls, name, description] of HR_CARDS) {
   if (!customElements.get(tag)) customElements.define(tag, cls);
-  if (!window.customCards.some((c) => c.type === tag)) window.customCards.push({ type: tag, name, description, preview: true });
+  if (!window.customCards.some((c) => c.type === tag)) window.customCards.push({ type: tag, name, description, preview: false });
 }
 console.info(`%c HOUSE-RULES-CARDS %c ${HR_VERSION} `, 'color:#fff;background:#4f46e5;font-weight:700', '');
