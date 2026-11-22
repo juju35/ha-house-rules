@@ -39,6 +39,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_subscribe,
         ws_action,
         ws_timer,
+        ws_presence,
         ws_rule_save,
         ws_rule_delete,
         ws_rule_yaml,
@@ -113,12 +114,18 @@ async def ws_action(hass: HomeAssistant, connection: websocket_api.ActiveConnect
     connection.send_result(msg["id"])
 
 
+# What the Activity tab can do to a countdown (an auto-off timer, a room lit by presence).
+_COUNTDOWN = {
+    vol.Required("action"): vol.In(("extend", "off")),
+    vol.Optional("minutes", default=15): vol.All(vol.Coerce(int), vol.Range(min=-1440, max=1440)),
+}
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/timer",
         vol.Required("entity_id"): str,
-        vol.Required("action"): vol.In(("extend", "off")),
-        vol.Optional("minutes", default=15): vol.All(vol.Coerce(int), vol.Range(min=-1440, max=1440)),
+        **_COUNTDOWN,
     }
 )
 @websocket_api.async_response
@@ -131,6 +138,29 @@ async def ws_timer(hass: HomeAssistant, connection: websocket_api.ActiveConnecti
                 rule.extend(msg["entity_id"], msg["minutes"])  # type: ignore[attr-defined]
             else:
                 await rule.async_turn_off(msg["entity_id"])  # type: ignore[attr-defined]
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/presence",
+        vol.Required("rule"): str,
+        **_COUNTDOWN,
+    }
+)
+@websocket_api.async_response
+async def ws_presence(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """The Activity tab's presence lights: +15 min on the countdown, or off now."""
+    if (manager := _manager(hass)) is None:
+        return _not_loaded(connection, msg)
+    rule = manager.rules.get(msg["rule"])
+    if rule is None or rule.lit_room() is None:
+        connection.send_error(msg["id"], "not_found", "No lit room for this rule")
+        return
+    if msg["action"] == "extend":
+        rule.extend(msg["minutes"])  # type: ignore[attr-defined]
+    else:
+        await rule.async_turn_off()  # type: ignore[attr-defined]
     connection.send_result(msg["id"])
 
 

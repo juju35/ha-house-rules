@@ -214,6 +214,9 @@ class PresenceLight(Rule):
         self.by_hand: set[str] = set()
         self._off: list[CALLBACK_TYPE] = []
         self._arm: CALLBACK_TYPE | None = None
+        # When each lit light goes off (timestamp) and over how long, once the room is empty.
+        self._ends: dict[str, float] = {}
+        self._totals: dict[str, float] = {}
 
     @property
     def lit(self) -> bool:
@@ -379,20 +382,67 @@ class PresenceLight(Rule):
         self.log("light_on", f"{self.cfg['room']} · {', '.join(names) or '-'}", "ok")
         self.manager.update()
 
-    def _cancel_off(self) -> None:
+    def _unplan(self) -> None:
         for unsub in self._off:
             self.cancel_later(unsub)
         self._off.clear()
 
+    def _cancel_off(self) -> None:
+        self._unplan()
+        self._ends.clear()
+        self._totals.clear()
+
     def _schedule_off(self) -> None:
         """Each lit light goes off after its slot's delay, else the rule's."""
         self._cancel_off()
-        groups: dict[float, list[str]] = {}
+        now = dt_util.utcnow().timestamp()
         for light in self.claimed:
-            delay = (self.slot(light) or {}).get("off_delay") or self.cfg["off_delay"]
-            groups.setdefault(delay.total_seconds(), []).append(light)
-        for seconds, lights in groups.items():
-            self._off.append(self.later(seconds, partial(self._release, lights)))
+            delay = ((self.slot(light) or {}).get("off_delay") or self.cfg["off_delay"]).total_seconds()
+            self._ends[light] = now + delay
+            self._totals[light] = delay
+        self._plan()
+
+    def _plan(self) -> None:
+        """(Re)arm the switch-offs at their planned times, the lights due together in one call."""
+        self._unplan()
+        now = dt_util.utcnow().timestamp()
+        groups: dict[float, list[str]] = {}
+        for light, ends in self._ends.items():
+            groups.setdefault(ends, []).append(light)
+        for ends, lights in groups.items():
+            self._off.append(self.later(max(0.0, ends - now), partial(self._release, sorted(lights))))
+        self.manager.update()
+
+    def extend(self, minutes: float) -> None:
+        """The panel's +15 min: the room empty, its lights go off later."""
+        if not self._ends:
+            return
+        for light in self._ends:
+            self._ends[light] += minutes * 60
+            self._totals[light] += minutes * 60
+        self._plan()
+
+    async def async_turn_off(self) -> None:
+        """The panel's Turn off: the lights the rule turned on go off now (someone there or not)."""
+        self.cancel_later(self._arm)
+        self._arm = None
+        await self._release(sorted(self.claimed), dt_util.now())
+
+    def lit_room(self) -> dict[str, Any] | None:
+        """The room's lights turned on by the rule: someone there, or the countdown before they go off."""
+        if not self.claimed:
+            return None
+        ends = min(self._ends.values()) if self._ends else None
+        return {
+            "rule": self.id,
+            "room": self.cfg["room"],
+            "name": self.name,
+            "lights": sorted(self.claimed),
+            "names": [self.friendly(light) for light in sorted(self.claimed)],
+            "present": self.present(),
+            "ends": ends,
+            "total": max(self._totals.values()) if self._totals else None,
+        }
 
     async def _on_nap(self, _event: Any) -> None:
         if lights := sorted(self.claimed & self.nap_lights()):
@@ -401,6 +451,8 @@ class PresenceLight(Rule):
     async def _release(self, lights: list[str], _now: datetime) -> None:
         params = {"transition": self.cfg["transition"]} if self.cfg.get("transition") is not None else {}
         for light in lights:
+            self._ends.pop(light, None)
+            self._totals.pop(light, None)
             if light not in self.claimed:
                 continue
             self.claimed.discard(light)
@@ -413,7 +465,7 @@ class PresenceLight(Rule):
                     "skipped",
                 )
         if not self.claimed:
-            self._off.clear()
+            self._cancel_off()
             self.detail = ""
         self.manager.update()
 
