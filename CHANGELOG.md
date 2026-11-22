@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.2 - 2026-11-22
+
+### Fixes
+- Panel, Activity tab: the countdown rings (Timed off, Presence lights) now tick every second instead of only moving when the data changed.
+- Timers card: the rings tick in place rather than re-rendering the whole card every second (the buttons keep their hover and focus).
+
 ## 1.8.1 - 2026-11-22
 
 ### Fixes
