@@ -947,8 +947,10 @@ rules:
     assert not calls["notify.phone"]
     hass.states.async_set("sensor.state", "cleaning")
     hass.states.async_set("sensor.battery", "40")
-    hass.states.async_set("sensor.state", "charging")
-    await hass.async_block_till_done()
+    # Out of the quiet hours whatever the time the tests run at (in them, it goes to notify.night).
+    with patch.object(type(manager), "quiet", return_value=False):
+        hass.states.async_set("sensor.state", "charging")
+        await hass.async_block_till_done()
     sent = calls["notify.phone"][-1].data
     assert sent["message"] == "Clean it"
     assert sent["data"]["push"]["interruption-level"] == "critical"
