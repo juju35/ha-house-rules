@@ -5,7 +5,7 @@
 //   custom:house-rules-activity-card the journal, filterable
 // One WebSocket subscription (house_rules/subscribe) is shared by every card of the page.
 
-const HR_VERSION = '1.8.0';
+const HR_VERSION = '1.8.1';
 
 const HR_STRINGS = {
   "en": {
@@ -1242,6 +1242,24 @@ function hrEsc(text) {
   );
 }
 
+// The timers card's rings: radius and circumference in the 64×64 viewBox.
+const HR_RING_R = 26;
+const HR_RING_C = 2 * Math.PI * HR_RING_R;
+
+/** Every second, the countdown rings under root move on in place (no re-render: buttons keep hover and focus,
+ * an open form or editor stays as it is). A ring: [data-ring-ends][data-ring-total] around .arc and .ringlabel. */
+function hrTickRings(root) {
+  const now = Date.now() / 1000;
+  for (const el of root?.querySelectorAll('[data-ring-ends]') || []) {
+    const left = Math.max(0, Number(el.dataset.ringEnds) - now);
+    const pct = Math.max(0, Math.min(1, left / (Number(el.dataset.ringTotal) || 1)));
+    el.querySelector('.arc')?.setAttribute('stroke-dashoffset', (HR_RING_C * (1 - pct)).toFixed(1));
+    const label = el.querySelector('.ringlabel');
+    const text = hrDuration(left);
+    if (label && label.textContent !== text) label.textContent = text;
+  }
+}
+
 function hrDuration(seconds) {
   seconds = Math.max(0, Math.round(seconds));
   const h = Math.floor(seconds / 3600);
@@ -1617,7 +1635,7 @@ class HouseRulesTimersCard extends HouseRulesBase {
 
   connectedCallback() {
     super.connectedCallback();
-    this._tick = setInterval(() => this._render(), 1000);
+    this._tick = setInterval(() => this.tickRings(), 1000);
   }
 
   disconnectedCallback() {
@@ -1629,10 +1647,12 @@ class HouseRulesTimersCard extends HouseRulesBase {
     const now = Date.now() / 1000;
     const left = Math.max(0, timer.ends - now);
     const pct = Math.max(0, Math.min(1, left / timer.total));
-    const r = 26;
-    const c = 2 * Math.PI * r;
     const [fg] = this.tones().amber;
-    return `<div class="ring"><div style="position:relative;width:72px;height:72px"><svg aria-hidden="true" width="72" height="72" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--divider-color)" stroke-width="6"/><circle cx="32" cy="32" r="${r}" fill="none" stroke="${fg}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct)).toFixed(1)}" transform="rotate(-90 32 32)"/></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${hrDuration(left)}</div></div><div class="tname">${hrEsc(timer.name)}</div><div class="row"><button class="btn" data-extend="${hrEsc(timer.entity_id)}" aria-label="${hrT(this._hass, 'extend')}">+15</button><button class="btn" data-off="${hrEsc(timer.entity_id)}" aria-label="${hrT(this._hass, 'turn_off')}"><ha-icon icon="mdi:power" style="--mdc-icon-size:16px"></ha-icon></button></div></div>`;
+    return `<div class="ring"><div data-ring-ends="${timer.ends}" data-ring-total="${timer.total}" style="position:relative;width:72px;height:72px"><svg aria-hidden="true" width="72" height="72" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${HR_RING_R}" fill="none" stroke="var(--divider-color)" stroke-width="6"/><circle class="arc" cx="32" cy="32" r="${HR_RING_R}" fill="none" stroke="${fg}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${HR_RING_C.toFixed(1)}" stroke-dashoffset="${(HR_RING_C * (1 - pct)).toFixed(1)}" transform="rotate(-90 32 32)"/></svg><div class="ringlabel" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${hrDuration(left)}</div></div><div class="tname">${hrEsc(timer.name)}</div><div class="row"><button class="btn" data-extend="${hrEsc(timer.entity_id)}" aria-label="${hrT(this._hass, 'extend')}">+15</button><button class="btn" data-off="${hrEsc(timer.entity_id)}" aria-label="${hrT(this._hass, 'turn_off')}"><ha-icon icon="mdi:power" style="--mdc-icon-size:16px"></ha-icon></button></div></div>`;
+  }
+
+  tickRings() {
+    hrTickRings(this.shadowRoot);
   }
 
   _render() {
@@ -1719,6 +1739,8 @@ window.__houseRulesShared = {
   tones: { light: HR_TONES_LIGHT, dark: HR_TONES_DARK },
   esc: hrEsc,
   duration: hrDuration,
+  ring: { r: HR_RING_R, c: HR_RING_C },
+  tickRings: hrTickRings,
   t: hrT,
   strings: HR_STRINGS,
   animCss: HR_ANIM_CSS,

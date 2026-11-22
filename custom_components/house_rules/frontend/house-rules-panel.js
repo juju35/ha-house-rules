@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.8.0';
+const HOUSE_RULES_PANEL_VERSION = '1.8.1';
 
 // Rooms tab: the sections of a room (as on Smart Comfort's Rooms tab), the entities each field takes, the list fields.
 const HRP_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -3428,9 +3428,12 @@ class HouseRulesPanel extends HTMLElement {
 
   connectedCallback() {
     if (this._hass && !this._unsub) this._subscribe();
+    this._tick ||= setInterval(() => this.tickRings(), 1000);
   }
 
   disconnectedCallback() {
+    clearInterval(this._tick);
+    this._tick = null;
     this._unsub?.then((u) => u()).catch(() => {});
     this._unsub = null;
     this._fold?.detach();
@@ -3622,9 +3625,12 @@ class HouseRulesPanel extends HTMLElement {
   ring(timer, size = 64) {
     const left = Math.max(0, timer.ends - Date.now() / 1000);
     const pct = Math.max(0, Math.min(1, left / timer.total));
-    const r = 26;
-    const c = 2 * Math.PI * r;
-    return `<div style="position:relative;width:${size}px;height:${size}px;flex:none"><svg aria-hidden="true" width="${size}" height="${size}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--divider-color)" stroke-width="6"/><circle cx="32" cy="32" r="${r}" fill="none" stroke="${this.tone('amber')[0]}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct)).toFixed(1)}" transform="rotate(-90 32 32)"/></svg><div class="ringlabel">${this.dur(left)}</div></div>`;
+    const { r, c } = hrs().ring;
+    return `<div data-ring-ends="${timer.ends}" data-ring-total="${timer.total}" style="position:relative;width:${size}px;height:${size}px;flex:none"><svg aria-hidden="true" width="${size}" height="${size}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--divider-color)" stroke-width="6"/><circle class="arc" cx="32" cy="32" r="${r}" fill="none" stroke="${this.tone('amber')[0]}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct)).toFixed(1)}" transform="rotate(-90 32 32)"/></svg><div class="ringlabel">${this.dur(left)}</div></div>`;
+  }
+
+  tickRings() {
+    hrs()?.tickRings?.(this.shadowRoot);
   }
 
   journalRow(e, wide = false) {
