@@ -638,6 +638,43 @@ rules:
     assert len(calls["light.turn_on"]) == 2
 
 
+async def test_presence_light_lit_room_countdown(hass: HomeAssistant, calls):
+    """The Activity tab's presence tile: someone there, then the countdown, +15 min and Turn off."""
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.hall", "off")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Hall: {light: light.hall, presence: binary_sensor.presence}
+rules:
+  - {id: hall, type: presence_light, room: Hall, off_delay: 60}
+""",
+    )
+    rule = manager.rules["hall"]
+    assert manager.presence() == []
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.hall", "on", context=calls["light.turn_on"][-1].context)
+    await hass.async_block_till_done()
+    [room] = manager.snapshot()["presence"]
+    assert room["room"] == "Hall" and room["present"] and room["ends"] is None
+    hass.states.async_set("binary_sensor.presence", "off")
+    await hass.async_block_till_done()
+    [room] = manager.presence()
+    assert not room["present"] and room["total"] == 60
+    assert room["ends"] == pytest.approx(dt_util.utcnow().timestamp() + 60)
+    rule.extend(15)
+    assert manager.presence()[0]["total"] == 60 + 15 * 60
+    later(hass, 61)
+    await hass.async_block_till_done()
+    assert rule.lit, "extended: still on after the off delay"
+    await rule.async_turn_off()
+    await hass.async_block_till_done()
+    assert not rule.lit and manager.presence() == []
+    assert calls["light.turn_off"][-1].data["entity_id"] == "light.hall"
+
+
 async def test_presence_light_leaves_a_room_lit_by_hand(hass: HomeAssistant, calls):
     hass.states.async_set("binary_sensor.presence", "off")
     hass.states.async_set("light.lamp", "on")
@@ -910,8 +947,10 @@ rules:
     assert not calls["notify.phone"]
     hass.states.async_set("sensor.state", "cleaning")
     hass.states.async_set("sensor.battery", "40")
-    hass.states.async_set("sensor.state", "charging")
-    await hass.async_block_till_done()
+    # Out of the quiet hours whatever the time the tests run at (in them, it goes to notify.night).
+    with patch.object(type(manager), "quiet", return_value=False):
+        hass.states.async_set("sensor.state", "charging")
+        await hass.async_block_till_done()
     sent = calls["notify.phone"][-1].data
     assert sent["message"] == "Clean it"
     assert sent["data"]["push"]["interruption-level"] == "critical"

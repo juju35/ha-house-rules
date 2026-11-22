@@ -34,7 +34,7 @@ The configuration lives in **`/config/house_rules.yaml`, edited both ways**: in 
 
 ### Panel
 
-| Activity tab: alerts in progress, timers and every rule at a glance | Dark mode |
+| Activity tab: alerts in progress, timers, presence lights and every rule at a glance | Dark mode |
 |---|---|
 | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-activity.png" alt="Activity tab: alerts in progress, timers and every rule at a glance" width="700"> | <img src="https://raw.githubusercontent.com/juju35/ha-house-rules/main/screenshots/panel-activity-dark.png" alt="Activity tab: alerts in progress, timers and every rule at a glance, dark mode" width="700"> |
 
@@ -121,7 +121,7 @@ The cards are added to the dashboard resources automatically (`/house_rules_stat
 
 | Tab | What it shows |
 |---|---|
-| Activity | Alerts in progress (acknowledge, snooze), running timers (+15 min, turn off), every rule's state, the latest runs |
+| Activity | Alerts in progress (acknowledge, snooze), running timers (+15 min, turn off), rooms lit by presence (someone there, or the countdown before their lights go off: +15 min, turn off), every rule's state, the latest runs |
 | Rules | Rules by type, filter chips, enable switch, Test, the YAML editor of a rule (as written in the file, comments included), a banner when the file was reloaded |
 | Rooms | As on Smart Comfort: a folding card per room — its live state (someone there, nap, an opening open, an entity unavailable) and the rules that use it in its header; inside, its name and Home Assistant area, then its sections (lights, windows and doors, presence and light level, devices, naps) with Home Assistant's entity pickers, the empty ones offered as **+** chips. **Discover** finds the rooms of the Home Assistant areas with their lights, openings, presence and light level sensors (a room keeps what it has; nothing is saved before **Save**); the areas without a room are offered at the end |
 | Journal | Every run, by day, filterable and searchable |

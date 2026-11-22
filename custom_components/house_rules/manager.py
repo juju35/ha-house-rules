@@ -450,6 +450,11 @@ class HouseRules:
             out.extend(rule.timers())
         return sorted(out, key=lambda t: t["ends"])
 
+    def presence(self) -> list[dict[str, Any]]:
+        """The rooms lit by presence: counting down first (soonest off first), then those with someone there."""
+        lit = [room for rule in self.rules.values() if (room := rule.lit_room())]
+        return sorted(lit, key=lambda r: (r["ends"] is None, r["ends"] or 0, r["room"]))
+
     def snapshot(self) -> dict[str, Any]:
         """Everything the panel and the cards show."""
         return {
@@ -459,6 +464,7 @@ class HouseRules:
             "rooms": self.raw.get("rooms", {}),
             "settings": {**DEFAULT_SETTINGS, **(self.raw.get("settings") or {})},
             "timers": self.timers(),
+            "presence": self.presence(),
             "alerts": self.alerts(),
             "journal": list(self.journal)[-100:],
             "conditions": self.conditions(),

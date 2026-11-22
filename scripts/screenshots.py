@@ -256,6 +256,20 @@ def timer(entity_id, name, total_minutes, left_minutes):
     }
 
 
+# The rooms lit by presence (the Activity tab's tiles): the room empty, its lights go off in 75 s.
+PRESENCE = [
+    {
+        "rule": "hallway_presence",
+        "room": "Hallway",
+        "name": "Hallway presence",
+        "lights": ["light.hallway_ceiling"],
+        "names": ["Hallway ceiling"],
+        "present": False,
+        "ends": NOW_TS + 75,
+        "total": 120,
+    },
+]
+
 TIMERS = [
     timer("switch.coffee_machine", "Coffee machine", 30, 12.7),
     timer("switch.iron", "Iron", 60, 41),
@@ -282,7 +296,7 @@ RULES = [
     rule("washer_done", "cycle_done", "Washing machine", "active", "Cycle running · 38 min", ago(52)),
     rule("vacuum_lights", "vacuum_follow", "Vacuum lights", "active", "Kitchen", ago(6)),
     rule("vacuum_guard", "vacuum_guard", "Vacuum guard", "armed", "", ago(300)),
-    rule("hallway_presence", "presence_light", "Hallway presence", "idle", "12 lx", ago(35)),
+    rule("hallway_presence", "presence_light", "Hallway presence", "active", "Hallway", ago(4)),
     rule("office_presence", "presence_light", "Office presence", "disabled"),
     rule("front_lock", "lock_guard", "Front door lock", "armed", "Locked", ago(70)),
     LEAK,
@@ -443,6 +457,13 @@ def snapshot(rules=None):
         "raw": {"rooms": ROOMS, "rules": RAW_RULES},
         "settings": SETTINGS,
         "timers": timers,
+        "presence": [
+            p
+            for r in rules
+            if r["type"] == "presence_light" and r["state"] == "active"
+            for p in PRESENCE
+            if p["rule"] == r["id"]
+        ],
         "alerts": alerts,
         "journal": JOURNAL,
         "conditions": {"quiet": False, "away": False, "alarm": False, "vacation": False, "people_home": 2},

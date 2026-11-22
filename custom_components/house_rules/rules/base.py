@@ -216,6 +216,10 @@ class Rule:
     def timers(self) -> list[dict[str, Any]]:
         return []
 
+    def lit_room(self) -> dict[str, Any] | None:
+        """presence_light: the room it keeps lit (see PresenceLight)."""
+        return None
+
     def status(self) -> dict[str, Any]:
         if not self.enabled:
             state = ST_DISABLED

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0 - 2026-11-22
+
+### Features
+- Panel, Activity tab: a "Presence lights" section, like "Timed off" for the plugs — a tile per room whose lights a `presence_light` rule turned on: "Someone" while the room is occupied, then a ring counting down to the switch-off once it is empty, with +15 min and Turn off.
+- New WebSocket command `house_rules/presence` (`rule`, `action: extend|off`, `minutes`); the snapshot gets a `presence` list.
+
 ## 1.7.0 - 2026-11-21
 
 ### Features

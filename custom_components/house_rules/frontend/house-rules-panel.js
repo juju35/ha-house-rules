@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.7.0';
+const HOUSE_RULES_PANEL_VERSION = '1.8.0';
 
 // Rooms tab: the sections of a room (as on Smart Comfort's Rooms tab), the entities each field takes, the list fields.
 const HRP_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -58,6 +58,7 @@ const HRP_STRINGS = {
     "all_good": "All good",
     "in_progress": "In progress",
     "timers": "Timed off",
+    "presence_lights": "Presence lights",
     "watch": "Watching",
     "latest": "Latest",
     "see_journal": "See the journal",
@@ -191,6 +192,7 @@ const HRP_STRINGS = {
     "all_good": "Tout va bien",
     "in_progress": "En cours",
     "timers": "Extinctions temporisées",
+    "presence_lights": "Lumières sur présence",
     "watch": "Surveillance",
     "latest": "Derniers déclenchements",
     "see_journal": "Voir le journal",
@@ -324,6 +326,7 @@ const HRP_STRINGS = {
     "all_good": "Alles in Ordnung",
     "in_progress": "Laufend",
     "timers": "Zeitgesteuert aus",
+    "presence_lights": "Licht bei Anwesenheit",
     "watch": "Überwachung",
     "latest": "Zuletzt",
     "see_journal": "Protokoll ansehen",
@@ -457,6 +460,7 @@ const HRP_STRINGS = {
     "all_good": "Todo bien",
     "in_progress": "En curso",
     "timers": "Apagados temporizados",
+    "presence_lights": "Luces por presencia",
     "watch": "Vigilancia",
     "latest": "Últimas activaciones",
     "see_journal": "Ver el registro",
@@ -590,6 +594,7 @@ const HRP_STRINGS = {
     "all_good": "Tutto ok",
     "in_progress": "In corso",
     "timers": "Spegnimenti a tempo",
+    "presence_lights": "Luci su presenza",
     "watch": "Sorveglianza",
     "latest": "Ultime attivazioni",
     "see_journal": "Vedi il registro",
@@ -723,6 +728,7 @@ const HRP_STRINGS = {
     "all_good": "Alles in orde",
     "in_progress": "Bezig",
     "timers": "Getimed uit",
+    "presence_lights": "Licht bij aanwezigheid",
     "watch": "Bewaking",
     "latest": "Laatste",
     "see_journal": "Logboek bekijken",
@@ -856,6 +862,7 @@ const HRP_STRINGS = {
     "all_good": "Tudo bem",
     "in_progress": "Em curso",
     "timers": "Desligar temporizado",
+    "presence_lights": "Luzes por presença",
     "watch": "Vigilância",
     "latest": "Últimas ativações",
     "see_journal": "Ver o registo",
@@ -989,6 +996,7 @@ const HRP_STRINGS = {
     "all_good": "Wszystko w porządku",
     "in_progress": "W toku",
     "timers": "Wyłączanie po czasie",
+    "presence_lights": "Światła na obecność",
     "watch": "Nadzór",
     "latest": "Ostatnie",
     "see_journal": "Zobacz dziennik",
@@ -1122,6 +1130,7 @@ const HRP_STRINGS = {
     "all_good": "Све је у реду",
     "in_progress": "У току",
     "timers": "Искључења тајмером",
+    "presence_lights": "Светла на присуство",
     "watch": "Надзор",
     "latest": "Последње",
     "see_journal": "Погледај дневник",
@@ -1255,6 +1264,7 @@ const HRP_STRINGS = {
     "all_good": "Totul e în regulă",
     "in_progress": "În curs",
     "timers": "Opriri temporizate",
+    "presence_lights": "Lumini la prezență",
     "watch": "Supraveghere",
     "latest": "Ultimele",
     "see_journal": "Vezi jurnalul",
@@ -1388,6 +1398,7 @@ const HRP_STRINGS = {
     "all_good": "Alt er i orden",
     "in_progress": "I gang",
     "timers": "Tidsstyret sluk",
+    "presence_lights": "Lys ved tilstedeværelse",
     "watch": "Overvågning",
     "latest": "Seneste",
     "see_journal": "Se logbogen",
@@ -1521,6 +1532,7 @@ const HRP_STRINGS = {
     "all_good": "Allt är bra",
     "in_progress": "Pågår",
     "timers": "Tidsstyrd avstängning",
+    "presence_lights": "Ljus vid närvaro",
     "watch": "Bevakning",
     "latest": "Senaste",
     "see_journal": "Visa loggen",
@@ -1654,6 +1666,7 @@ const HRP_STRINGS = {
     "all_good": "Всичко е наред",
     "in_progress": "В ход",
     "timers": "Изключване с таймер",
+    "presence_lights": "Осветление при присъствие",
     "watch": "Наблюдение",
     "latest": "Последни",
     "see_journal": "Виж дневника",
@@ -1787,6 +1800,7 @@ const HRP_STRINGS = {
     "all_good": "Всё в порядке",
     "in_progress": "Выполняется",
     "timers": "Выключение по таймеру",
+    "presence_lights": "Свет по присутствию",
     "watch": "Наблюдение",
     "latest": "Последние",
     "see_journal": "Открыть журнал",
@@ -1920,6 +1934,7 @@ const HRP_STRINGS = {
     "all_good": "Усе гаразд",
     "in_progress": "Виконується",
     "timers": "Вимкнення за таймером",
+    "presence_lights": "Світло за присутністю",
     "watch": "Нагляд",
     "latest": "Останні",
     "see_journal": "Відкрити журнал",
@@ -2053,6 +2068,7 @@ const HRP_STRINGS = {
     "all_good": "Minden rendben",
     "in_progress": "Folyamatban",
     "timers": "Időzített kikapcsolás",
+    "presence_lights": "Jelenléti világítás",
     "watch": "Felügyelet",
     "latest": "Legutóbbiak",
     "see_journal": "Napló megtekintése",
@@ -2186,6 +2202,7 @@ const HRP_STRINGS = {
     "all_good": "Všetko v poriadku",
     "in_progress": "Prebieha",
     "timers": "Časované vypnutie",
+    "presence_lights": "Svetlá pri prítomnosti",
     "watch": "Dohľad",
     "latest": "Posledné",
     "see_journal": "Zobraziť denník",
@@ -2319,6 +2336,7 @@ const HRP_STRINGS = {
     "all_good": "Vše v pořádku",
     "in_progress": "Probíhá",
     "timers": "Časované vypnutí",
+    "presence_lights": "Světla při přítomnosti",
     "watch": "Dohled",
     "latest": "Poslední",
     "see_journal": "Zobrazit deník",
@@ -2452,6 +2470,7 @@ const HRP_STRINGS = {
     "all_good": "Vse v redu",
     "in_progress": "Poteka",
     "timers": "Časovni izklopi",
+    "presence_lights": "Luči ob prisotnosti",
     "watch": "Nadzor",
     "latest": "Zadnje",
     "see_journal": "Ogled dnevnika",
@@ -2585,6 +2604,7 @@ const HRP_STRINGS = {
     "all_good": "Viss kārtībā",
     "in_progress": "Notiek",
     "timers": "Izslēgšana ar taimeri",
+    "presence_lights": "Gaismas klātbūtnē",
     "watch": "Uzraudzība",
     "latest": "Pēdējie",
     "see_journal": "Skatīt žurnālu",
@@ -2718,6 +2738,7 @@ const HRP_STRINGS = {
     "all_good": "Όλα εντάξει",
     "in_progress": "Σε εξέλιξη",
     "timers": "Σβησίματα με χρονόμετρο",
+    "presence_lights": "Φώτα παρουσίας",
     "watch": "Επιτήρηση",
     "latest": "Πρόσφατα",
     "see_journal": "Προβολή ημερολογίου",
@@ -2851,6 +2872,7 @@ const HRP_STRINGS = {
     "all_good": "Sve je u redu",
     "in_progress": "U toku",
     "timers": "Isključenja tajmerom",
+    "presence_lights": "Svetla na prisustvo",
     "watch": "Nadzor",
     "latest": "Poslednje",
     "see_journal": "Pogledaj dnevnik",
@@ -3628,6 +3650,14 @@ class HouseRulesPanel extends HTMLElement {
           `<div class="tile" style="gap:14px">${this.ring(t)}<div class="grow"><div class="tname">${hrpEsc(t.name)}</div><div class="sub small">${hrpEsc(t.entity_id)}</div><div class="row" style="margin-top:8px"><button class="btn sm" data-extend="${hrpEsc(t.entity_id)}">${this.t('extend')}</button><button class="btn sm" data-off="${hrpEsc(t.entity_id)}">${this.t('turn_off')}</button></div></div></div>`,
       )
       .join('');
+    const lit = (d.presence || [])
+      .map((p) => {
+        const lead = p.ends ? this.ring(p) : this.icon('mdi:motion-sensor', 'blue', 64);
+        const state = p.ends ? '' : `<div style="margin-top:4px">${this.pill(this.t('rm_someone'), 'blue')}</div>`;
+        const extend = p.ends ? `<button class="btn sm" data-presence-extend="${hrpEsc(p.rule)}">${this.t('extend')}</button>` : '';
+        return `<div class="tile" style="gap:14px">${lead}<div class="grow"><div class="tname">${hrpEsc(p.room)}</div><div class="sub small">${hrpEsc((p.names || []).join(', '))}</div>${state}<div class="row" style="margin-top:8px">${extend}<button class="btn sm" data-presence-off="${hrpEsc(p.rule)}">${this.t('turn_off')}</button></div></div></div>`;
+      })
+      .join('');
     const watch = (d.rules || [])
       .filter((r) => r.state !== 'alert')
       .map((r) => this.tile(hrs().icons[r.type], hrs().tone[r.state] || 'grey', r.name, this.ruleLine(r)))
@@ -3637,7 +3667,7 @@ class HouseRulesPanel extends HTMLElement {
       .slice(0, 8)
       .map((e) => this.journalRow(e))
       .join('');
-    return `<div class="cols"><div class="main">${alerts ? `<section><h2>${this.t('in_progress')}</h2>${alerts}</section>` : ''}${timers ? `<section><h2>${this.t('timers')} · ${(d.timers || []).length}</h2><div class="tiles">${timers}</div></section>` : ''}<section><h2>${this.t('watch')}</h2><div class="tiles">${watch}</div></section></div><aside class="card side"><h2>${this.t('latest')}</h2><ul>${latest}</ul><button class="link" data-tab="journal">${this.t('see_journal')}</button></aside></div>`;
+    return `<div class="cols"><div class="main">${alerts ? `<section><h2>${this.t('in_progress')}</h2>${alerts}</section>` : ''}${timers ? `<section><h2>${this.t('timers')} · ${(d.timers || []).length}</h2><div class="tiles">${timers}</div></section>` : ''}${lit ? `<section><h2>${this.t('presence_lights')} · ${(d.presence || []).length}</h2><div class="tiles">${lit}</div></section>` : ''}<section><h2>${this.t('watch')}</h2><div class="tiles">${watch}</div></section></div><aside class="card side"><h2>${this.t('latest')}</h2><ul>${latest}</ul><button class="link" data-tab="journal">${this.t('see_journal')}</button></aside></div>`;
   }
 
   // ---------- tab: rules ----------
@@ -4084,6 +4114,8 @@ class HouseRulesPanel extends HTMLElement {
     on('[data-test]', 'click', (el) => this.ws({ type: 'house_rules/action', rule: el.dataset.test, action: 'test' }));
     on('[data-extend]', 'click', (el) => this.ws({ type: 'house_rules/timer', entity_id: el.dataset.extend, action: 'extend', minutes: 15 }));
     on('[data-off]', 'click', (el) => this.ws({ type: 'house_rules/timer', entity_id: el.dataset.off, action: 'off' }));
+    on('[data-presence-extend]', 'click', (el) => this.ws({ type: 'house_rules/presence', rule: el.dataset.presenceExtend, action: 'extend', minutes: 15 }));
+    on('[data-presence-off]', 'click', (el) => this.ws({ type: 'house_rules/presence', rule: el.dataset.presenceOff, action: 'off' }));
     on('[data-enable]', 'change', (el) => this.toggleRule(el.dataset.enable, el.checked));
     on('[data-edit]', 'click', (el) => this.edit(el.dataset.edit));
     on('#hrp-file', 'input', (el) => {
