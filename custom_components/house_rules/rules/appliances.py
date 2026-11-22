@@ -153,7 +153,12 @@ class CycleDone(Rule):
             self.log("emptied", self.friendly(entity), "ok")
             return
         if entity == self.cfg.get("state_entity"):
-            if new.state in self.cfg["done_states"] and (old is None or old.state not in self.cfg["done_states"]):
+            # Not when the entity appears (restart) or comes back (unavailable → done state).
+            if (
+                new.state in self.cfg["done_states"]
+                and old is not None
+                and old.state not in (*self.cfg["done_states"], *UNAVAILABLE)
+            ):
                 self.hass.async_create_task(self._done())
             return
         if entity == self.cfg.get("power_entity"):

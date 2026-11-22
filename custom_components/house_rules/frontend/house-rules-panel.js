@@ -2,7 +2,7 @@
 // Plain web component, no build. Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
 
-const HOUSE_RULES_PANEL_VERSION = '1.8.0';
+const HOUSE_RULES_PANEL_VERSION = '1.8.1';
 
 // Rooms tab: the sections of a room (as on Smart Comfort's Rooms tab), the entities each field takes, the list fields.
 const HRP_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];

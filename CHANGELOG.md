@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.1 - 2026-11-22
+
+### Fixes
+- `cycle_done` with a `state_entity`: no more end of cycle when the entity appears at startup or comes back from unavailable/unknown already in a done state — only a real change (e.g. cleaning → charging) counts. Its conditions were checked on entities not set up yet ("unknown entity" warning) and the journal got a false "done".
+
 ## 1.8.0 - 2026-11-22
 
 ### Features

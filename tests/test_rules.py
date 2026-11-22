@@ -977,3 +977,27 @@ rules:
 """,
     )
     assert manager.rules["done"].active() is False
+
+
+async def test_cycle_done_state_ignores_restart_and_unavailable(hass: HomeAssistant, calls):
+    await setup(
+        hass,
+        """
+settings: {notify: notify.phone}
+rules:
+  - id: done
+    type: cycle_done
+    state_entity: sensor.state
+    done_states: [charging]
+""",
+    )
+    hass.states.async_set("sensor.state", "charging")  # the entity appears (restart)
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.state", "unavailable")
+    hass.states.async_set("sensor.state", "charging")  # it comes back
+    await hass.async_block_till_done()
+    assert not calls["notify.phone"]
+    hass.states.async_set("sensor.state", "cleaning")
+    hass.states.async_set("sensor.state", "charging")  # a real end of cycle
+    await hass.async_block_till_done()
+    assert len(calls["notify.phone"]) == 1
