@@ -98,6 +98,13 @@ class LightArbiter:
             return True
         return False
 
+    def adopt(self, owner: str, light: str) -> None:
+        """`owner` takes over `light`, already on by hand: it goes off once no rule wants it any more."""
+        holders = self.claims.setdefault(light, set())
+        if not holders:
+            self.was_on[light] = False
+        holders.add(owner)
+
     def holders(self, light: str) -> set[str]:
         return set(self.claims.get(light, ()))
 

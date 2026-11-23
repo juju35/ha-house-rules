@@ -679,7 +679,7 @@ async def test_presence_light_leaves_a_room_lit_by_hand(hass: HomeAssistant, cal
     hass.states.async_set("binary_sensor.presence", "off")
     hass.states.async_set("light.lamp", "on")
     hass.states.async_set("light.ceiling", "off")
-    await setup(
+    manager = await setup(
         hass,
         """
 rooms:
@@ -691,6 +691,15 @@ rules:
     hass.states.async_set("binary_sensor.presence", "on")
     await hass.async_block_till_done()
     assert not calls["light.turn_on"], "the lamp is on by hand: the ceiling light stays off"
+    rule = manager.rules["hall"]
+    assert rule.claimed == {"light.lamp"}, "the lamp is taken over as it is"
+    # The room empty, the lamp goes off after the delay like a light the rule turned on.
+    hass.states.async_set("binary_sensor.presence", "off")
+    await hass.async_block_till_done()
+    later(hass, 121)
+    await hass.async_block_till_done()
+    assert calls["light.turn_off"][-1].data["entity_id"] == "light.lamp"
+    assert not rule.lit
 
 
 async def test_presence_light_not_during_naps(hass: HomeAssistant, calls):

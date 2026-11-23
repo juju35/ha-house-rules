@@ -202,7 +202,8 @@ class PresenceLight(Rule):
     Several sensors may watch the room (someone is there while one is on), a presence may have to last `on_after`
     before the lights turn on (someone passing by doesn't count), and time `slots` keep some lights off or set their
     brightness, colour and delay before off. A light turned off by hand while someone is there stays off until the
-    room is empty; nothing is turned on while a light of the room is already on by hand.
+    room is empty; a light of the room already on by hand (no rule wants it) is taken over as it is when someone comes
+    in, so it goes off too once the room is empty, and nothing else is turned on.
     """
 
     type = PRESENCE_LIGHT
@@ -306,6 +307,8 @@ class PresenceLight(Rule):
     def _on_change(self, _event: Event) -> None:
         if self.present():
             self._cancel_off()
+            if not self.claimed and self.active():
+                self._adopt()
             if self.claimed or self._arm or not self.can_light():
                 return
             delay = self.cfg["on_after"].total_seconds()
@@ -351,6 +354,18 @@ class PresenceLight(Rule):
         if not self.claimed:
             self.detail = ""
         self.manager.update()
+
+    def _adopt(self) -> None:
+        """The lights of the room already on by hand (no rule wants them): ours as they are, to turn off later."""
+        arbiter = self.manager.arbiter
+        lights = [light for light in self.lights() if self.value(light) == "on" and not arbiter.wanted(light)]
+        for light in lights:
+            arbiter.adopt(self.id, light)
+            self.claimed.add(light)
+        if lights:
+            self.detail = self.cfg["room"]
+            self.log("light_adopted", f"{self.cfg['room']} · {', '.join(map(self.friendly, lights))}", "ok")
+            self.manager.update()
 
     async def _on(self) -> None:
         lights = self.lights()
