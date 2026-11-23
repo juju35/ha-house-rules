@@ -419,7 +419,7 @@ Presence in the room turns its lights on when it is dark (below `dark_below`, wi
 
 - **Sensors**: someone is there while one of the sensors is on (the room's `presence`, or `sensors`). With `on_after`, the presence must last that long first: someone passing by doesn't count.
 - **Slots**: the first slot that applies to a light decides — kept off (`off: true`), or turned on at a `brightness` and `color`, with its own `off_delay` (longer in the evening for a bathroom). A slot without `lights` applies to all of them; `days` limits it to some days. Slots may cross midnight.
-- **By hand**: a light turned off by hand while someone is there stays off until the room is empty. A light of the room already on by hand (no rule wants it) is taken over as it is when someone comes in: nothing else is turned on, and it goes off after the delay once the room is empty.
+- **By hand**: a light turned off by hand while someone is there stays off until the room is empty. A light of the room itself (in `rooms:`) on by hand and wanted by no rule is taken over as it is when someone comes in or leaves: nothing else is turned on, and it goes off after the delay once the room is empty. A light shared with another room is left to that room's rule; a light kept off during a nap and turned on by hand stays on.
 - **Shared lights**: a light of two rooms (the hallway's, from the entrance) stays on while a rule still wants it.
 
 | Option | Default | Description |

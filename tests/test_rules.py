@@ -675,7 +675,7 @@ rules:
     assert calls["light.turn_off"][-1].data["entity_id"] == "light.hall"
 
 
-async def test_presence_light_leaves_a_room_lit_by_hand(hass: HomeAssistant, calls):
+async def test_presence_light_takes_over_a_light_on_by_hand(hass: HomeAssistant, calls):
     hass.states.async_set("binary_sensor.presence", "off")
     hass.states.async_set("light.lamp", "on")
     hass.states.async_set("light.ceiling", "off")
@@ -700,6 +700,56 @@ rules:
     await hass.async_block_till_done()
     assert calls["light.turn_off"][-1].data["entity_id"] == "light.lamp"
     assert not rule.lit
+
+
+async def test_presence_light_takes_over_a_light_turned_on_while_there(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("sensor.lux", "500")
+    hass.states.async_set("light.hall", "off")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Hall: {light: light.hall, presence: binary_sensor.presence, illuminance: sensor.lux}
+rules:
+  - {id: hall, type: presence_light, room: Hall, dark_below: 30}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert not calls["light.turn_on"], "bright: the rule turns nothing on"
+    hass.states.async_set("light.hall", "on")  # by hand, someone there
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.presence", "off")
+    await hass.async_block_till_done()
+    assert manager.rules["hall"].claimed == {"light.hall"}, "taken over when the room empties"
+    later(hass, 31)
+    await hass.async_block_till_done()
+    assert calls["light.turn_off"][-1].data["entity_id"] == "light.hall"
+
+
+async def test_presence_light_leaves_a_shared_light_to_its_room(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.hall", "off")
+    hass.states.async_set("light.corridor", "on")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Hall: {light: light.hall, presence: binary_sensor.presence}
+  Corridor: {light: light.corridor}
+rules:
+  - {id: hall, type: presence_light, room: Hall, lights: [light.hall, light.corridor]}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    assert not manager.rules["hall"].claimed, "the corridor light belongs to the corridor"
+    hass.states.async_set("binary_sensor.presence", "off")
+    await hass.async_block_till_done()
+    later(hass, 31)
+    await hass.async_block_till_done()
+    assert not calls["light.turn_off"]
 
 
 async def test_presence_light_not_during_naps(hass: HomeAssistant, calls):
@@ -1010,3 +1060,24 @@ rules:
     hass.states.async_set("sensor.state", "charging")  # a real end of cycle
     await hass.async_block_till_done()
     assert len(calls["notify.phone"]) == 1
+
+
+async def test_presence_light_leaves_a_nap_light_on_by_hand(hass: HomeAssistant, calls):
+    hass.states.async_set("binary_sensor.presence", "off")
+    hass.states.async_set("light.hallway", "on")
+    hass.states.async_set("schedule.nap", "on")
+    manager = await setup(
+        hass,
+        """
+rooms:
+  Kids: {light: light.kids, naps: [schedule.nap]}
+  Hallway: {light: light.hallway, presence: binary_sensor.presence}
+rules:
+  - {id: hallway, type: presence_light, room: Hallway, not_during_naps: [light.hallway]}
+""",
+    )
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+    later(hass, 70)
+    await hass.async_block_till_done()
+    assert not manager.rules["hallway"].claimed and not calls["light.turn_off"], "on by hand during the nap: left on"
