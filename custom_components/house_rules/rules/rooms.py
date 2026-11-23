@@ -202,7 +202,9 @@ class PresenceLight(Rule):
     Several sensors may watch the room (someone is there while one is on), a presence may have to last `on_after`
     before the lights turn on (someone passing by doesn't count), and time `slots` keep some lights off or set their
     brightness, colour and delay before off. A light turned off by hand while someone is there stays off until the
-    room is empty; nothing is turned on while a light of the room is already on by hand.
+    room is empty; a light of the room itself (in `rooms:`) on by hand and wanted by no rule is taken over as it is when
+    someone comes in or leaves, so it goes off too once the room is empty (nothing else is turned on), except the lights
+    kept off during a nap.
     """
 
     type = PRESENCE_LIGHT
@@ -306,6 +308,8 @@ class PresenceLight(Rule):
     def _on_change(self, _event: Event) -> None:
         if self.present():
             self._cancel_off()
+            if self.active():
+                self._adopt()
             if self.claimed or self._arm or not self.can_light():
                 return
             delay = self.cfg["on_after"].total_seconds()
@@ -318,6 +322,8 @@ class PresenceLight(Rule):
         self.cancel_later(self._arm)
         self._arm = None
         self.by_hand.clear()
+        if self.active():
+            self._adopt()  # a light turned on by hand while someone was there
         if self.claimed:
             self._schedule_off()
 
@@ -351,6 +357,28 @@ class PresenceLight(Rule):
         if not self.claimed:
             self.detail = ""
         self.manager.update()
+
+    def _adopt(self) -> None:
+        """The lights of the room itself on by hand (no rule wants them): ours as they are, to turn off later.
+
+        Only the room's own lights (`rooms:`), so a light shared with another room is left to that room's rule; never
+        a light kept off during a nap, which would go off at once.
+        """
+        arbiter = self.manager.arbiter
+        own = set(room_lights(self.room))
+        napping = self.nap_lights()
+        lights = [
+            light
+            for light in self.lights()
+            if light in own and light not in napping and self.value(light) == "on" and not arbiter.wanted(light)
+        ]
+        for light in lights:
+            arbiter.adopt(self.id, light)
+            self.claimed.add(light)
+        if lights:
+            self.detail = self.cfg["room"]
+            self.log("light_adopted", f"{self.cfg['room']} · {', '.join(map(self.friendly, lights))}", "ok")
+            self.manager.update()
 
     async def _on(self) -> None:
         lights = self.lights()

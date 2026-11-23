@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.5 - 2026-11-23
+
+### Fixes
+- Presence lights: a light of the room itself (in `rooms:`) on by hand (switch, HomeKit, dashboard…) and wanted by no rule is now taken over as it is when someone comes in or leaves, so it goes off after the delay once the room is empty. It used to stay on until turned off by hand. A light shared with another room is left to that room's rule, and a light kept off during a nap and turned on by hand is left on.
+
 ## 1.8.4 - 2026-11-22
 
 ### Performance
