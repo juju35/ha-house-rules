@@ -35,10 +35,10 @@ jobs:
         run: |
           VERSION="$(jq -r .version custom_components/house_rules/manifest.json)"
           grep -q "^## $VERSION " CHANGELOG.md || { echo "::error file=CHANGELOG.md::no '## $VERSION' entry in CHANGELOG.md"; exit 1; }
-          PANEL="$(grep -oP "HOUSE_RULES_PANEL_VERSION = '\K[^']+" custom_components/house_rules/frontend/house-rules-panel.js)"
-          CARDS="$(grep -oP "HR_VERSION = '\K[^']+" custom_components/house_rules/frontend/house-rules-cards.js)"
-          [ "$PANEL" = "$VERSION" ] || { echo "::error file=custom_components/house_rules/frontend/house-rules-panel.js::HOUSE_RULES_PANEL_VERSION is $PANEL, manifest.json says $VERSION"; exit 1; }
-          [ "$CARDS" = "$VERSION" ] || { echo "::error file=custom_components/house_rules/frontend/house-rules-cards.js::HR_VERSION is $CARDS, manifest.json says $VERSION"; exit 1; }
+          PANEL="$(grep -oP "HOUSE_RULES_PANEL_VERSION = '\K[^']+" src/house-rules-panel/constants.js)"
+          CARDS="$(grep -oP "HR_VERSION = '\K[^']+" src/house-rules-cards/core.js)"
+          [ "$PANEL" = "$VERSION" ] || { echo "::error file=src/house-rules-panel/constants.js::HOUSE_RULES_PANEL_VERSION is $PANEL, manifest.json says $VERSION"; exit 1; }
+          [ "$CARDS" = "$VERSION" ] || { echo "::error file=src/house-rules-cards/core.js::HR_VERSION is $CARDS, manifest.json says $VERSION"; exit 1; }
           echo "Version $VERSION everywhere"
 
   hassfest:
@@ -70,6 +70,10 @@ jobs:
       - name: Home Assistant version
         run: python -c 'from homeassistant.const import __version__; print(f"::notice::Home Assistant {__version__}")'
 
+      # The frontend files are assembled from their ES modules in src/ (build output, not committed).
+      - name: Build the frontend
+        uses: ./.github/actions/build-frontend
+
       - name: Run tests
         run: pytest
         env:
@@ -98,6 +102,10 @@ jobs:
       - name: Install dependencies
         run: pip install "pytest-homeassistant-custom-component==0.13.190" "ruamel.yaml>=0.18.6"
 
+      # The frontend files are assembled from their ES modules in src/ (build output, not committed).
+      - name: Build the frontend
+        uses: ./.github/actions/build-frontend
+
       - name: Run tests
         run: pytest
 
@@ -108,10 +116,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: "22"
+      # The frontend files are assembled from their ES modules in src/ (build output, not committed).
+      - name: Build the frontend
+        uses: ./.github/actions/build-frontend
 
       - name: Run the cards tests
         run: node --test tests/js/*.test.mjs

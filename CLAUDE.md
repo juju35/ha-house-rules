@@ -18,6 +18,7 @@
 ## Before opening a PR — run the checks locally
 CI mirrors these; running them first avoids round-trips:
 ```sh
+npm install --no-save --no-package-lock acorn@8.19.0 && node scripts/build-frontend.mjs
 pre-commit run -a
 vulture custom_components .vulture_whitelist.py --min-confidence 60
 npx --yes jscpd@5.4.2 .
@@ -36,8 +37,8 @@ This is an **INTEGRATION** repo. A bump is complete only when **every** file bel
 carries the new version, updated together in one commit:
 1. `CHANGELOG.md` → add a "## X.Y.Z - YYYY-MM-DD" section at the top (`### Features` | `Fixes` | `Performance` | `Maintenance`).
 2. `custom_components/house_rules/manifest.json` → `"version": "X.Y.Z"`.
-3. `custom_components/house_rules/frontend/house-rules-panel.js` → `HOUSE_RULES_PANEL_VERSION` (checked by the Release
-   workflow's "Read version" step: a mismatch silently skips the tag) and `frontend/house-rules-cards.js` → `HR_VERSION`.
+3. `src/house-rules-panel/constants.js` → `HOUSE_RULES_PANEL_VERSION` (checked by the Release
+   workflow's "Read version" step: a mismatch silently skips the tag) and `src/house-rules-cards/core.js` → `HR_VERSION`.
 - Bump rule: `fix` → patch, `feat` → minor, breaking change → major.
 - The PR/commit title carries the version in parentheses, e.g. `feat: new option (X.Y.Z)`.
 
@@ -55,6 +56,15 @@ carries the new version, updated together in one commit:
 
 ## Supported integrations
 This is a **standalone integration** (its own integration, panel and cards): it acts on any Home Assistant entity, not on top of a specific integration, so it has **no** `## Supported integrations` section.
+
+## Source layout
+- The big frontend files are written as ES modules in `src/house-rules-cards/` and `src/house-rules-panel/` (entry `index.js`, translations one file per
+  language in `i18n/` where the file has a table). `scripts/build-frontend.mjs` assembles each into
+  `custom_components/house_rules/frontend/<stem>.js` (scripts/bundle.mjs, needs acorn); those files are build output,
+  git-ignored and **not committed** — build before pytest, the screenshots or `scripts/split-frontend.mjs`.
+- The modules share one scope once assembled (a classic script): keep top-level names unique across them. A new module
+  must be listed in its `index.js`, in load order. Smaller frontend files (`house-rules-badge.js`, `house-rules-icons.js`)
+  stay committed as they are.
 
 ## Translations
 - English is the source. Keep every language in sync when a user-facing string changes.

@@ -618,13 +618,17 @@ One device per rule, plus the House Rules device:
 
 ## Development
 
+The big frontend files are written as ES modules in `src/house-rules-cards/` and `src/house-rules-panel/` (entry `index.js`, translations one file per language in `i18n/`). `scripts/build-frontend.mjs` assembles them into `house-rules-cards.js` and `house-rules-panel.js` in `custom_components/house_rules/frontend/`, which are not committed: build them before running Home Assistant, the tests or the screenshots. The modules share one scope once assembled, so top-level names stay unique; a new module must be listed in its `index.js`.
+
 ```bash
+npm install --no-save --no-package-lock acorn@8.19.0 && node scripts/build-frontend.mjs
 pip install -r requirements_test.txt && pytest
+node --test tests/js/*.test.mjs   # cards and panel tests, on the assembled files
 ```
 
 ### Releasing
 
-1. Bump the version in `custom_components/house_rules/manifest.json`, `HOUSE_RULES_PANEL_VERSION` (panel) and `HR_VERSION` (cards)
+1. Bump the version in `custom_components/house_rules/manifest.json`, `HOUSE_RULES_PANEL_VERSION` (`src/house-rules-panel/constants.js`) and `HR_VERSION` (`src/house-rules-cards/core.js`)
 2. Add a `## <version>` section at the top of [CHANGELOG.md](https://github.com/juju35/ha-house-rules/blob/main/CHANGELOG.md)
 3. Push to `main`: the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
 

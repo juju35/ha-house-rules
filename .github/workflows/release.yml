@@ -44,7 +44,7 @@ jobs:
         id: version
         run: |
           VERSION="$(jq -r .version custom_components/house_rules/manifest.json)"
-          PANEL="$(grep -oP "HOUSE_RULES_PANEL_VERSION = '\K[^']+" custom_components/house_rules/frontend/house-rules-panel.js)"
+          PANEL="$(grep -oP "HOUSE_RULES_PANEL_VERSION = '\K[^']+" src/house-rules-panel/constants.js)"
           [ "$PANEL" = "$VERSION" ] || { echo "::error::HOUSE_RULES_PANEL_VERSION ($PANEL) != manifest ($VERSION)"; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
@@ -52,6 +52,11 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # The frontend files are assembled from their ES modules in src/ (build output, not committed).
+      - name: Build the frontend
+        if: steps.version.outputs.exists == 'false'
+        uses: ./.github/actions/build-frontend
 
       - name: Build zip and notes
         if: steps.version.outputs.exists == 'false'
