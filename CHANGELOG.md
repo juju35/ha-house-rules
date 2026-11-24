@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.6 - 2026-11-24
+
+### Maintenance
+- The frontend sources (`house-rules-cards.js`, `house-rules-panel.js`) are split into ES modules (`src/house-rules-cards/`, `src/house-rules-panel/`, translations one file per language), assembled at build by `scripts/build-frontend.mjs` into the same single files, which are no longer committed. No behaviour change.
+
 ## 1.8.5 - 2026-11-23
 
 ### Fixes

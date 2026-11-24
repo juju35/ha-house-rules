@@ -15,10 +15,13 @@ stepped frame by frame, so they loop cleanly.
 import io
 import json
 import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# The frontend files are assembled from their ES modules in src/ (build output, not committed).
+subprocess.run(["node", "scripts/build-frontend.mjs"], cwd=ROOT, check=True)
 FRONTEND = ROOT / "custom_components/house_rules/frontend"
 STATIC = "http://homeassistant.local/house_rules_static"
 URL = "http://homeassistant.local/house-rules"
