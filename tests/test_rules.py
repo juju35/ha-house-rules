@@ -1120,7 +1120,9 @@ async def test_chime_skips_player_that_stays_unavailable(hass: HomeAssistant, ca
     hass.states.async_set("media_player.apple_tv", "unavailable")
     await setup(hass, CHIME_APPLE_TV)
     hass.states.async_set("binary_sensor.door", "on")
-    for _ in range(5):
+    for _ in range(200):  # until play() has armed its wake timer and called turn_on
+        if turn_on:
+            break
         await asyncio.sleep(0)
     assert turn_on
     assert not play

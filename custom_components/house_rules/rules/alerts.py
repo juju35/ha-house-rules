@@ -254,9 +254,13 @@ async def wake(rule: Rule, player: str) -> State | None:
         if _ready(event.data.get("new_state")):
             done.set()
 
+    @callback
+    def _timeout(_now: datetime) -> None:
+        done.set()
+
     unsubs = [
         async_track_state_change_event(rule.hass, [player], _changed),
-        async_call_later(rule.hass, WAKE_TIMEOUT, lambda _now: done.set()),
+        async_call_later(rule.hass, WAKE_TIMEOUT, _timeout),
     ]
     try:
         await rule.manager.call("media_player", "turn_on", {"entity_id": player}, blocking=False)
