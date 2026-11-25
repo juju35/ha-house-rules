@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -1083,14 +1084,7 @@ rules:
     assert not manager.rules["hallway"].claimed and not calls["light.turn_off"], "on by hand during the nap: left on"
 
 
-async def test_chime_skips_unavailable_player(hass: HomeAssistant, calls):
-    play = async_mock_service(hass, "media_player", "play_media")
-    volume = async_mock_service(hass, "media_player", "volume_set")
-    hass.states.async_set("binary_sensor.door", "off")
-    hass.states.async_set("media_player.apple_tv", "unavailable")
-    await setup(
-        hass,
-        """
+CHIME_APPLE_TV = """
 rules:
   - id: chime
     type: sensor_chime
@@ -1098,15 +1092,39 @@ rules:
     media_player: media_player.apple_tv
     media: media-source://chime.mp3
     volume: 0.4
-""",
-    )
-    hass.states.async_set("binary_sensor.door", "on")
-    await hass.async_block_till_done()
-    assert not volume
-    assert not play
+"""
+
+
+async def test_chime_wakes_player_first(hass: HomeAssistant, calls):
+    play = async_mock_service(hass, "media_player", "play_media")
+    volume = async_mock_service(hass, "media_player", "volume_set")
+
+    async def _turn_on(call):
+        hass.states.async_set("media_player.apple_tv", "idle", {"volume_level": 0.2})
+
+    hass.services.async_register("media_player", "turn_on", _turn_on)
     hass.states.async_set("binary_sensor.door", "off")
     hass.states.async_set("media_player.apple_tv", "off")
+    await setup(hass, CHIME_APPLE_TV)
     hass.states.async_set("binary_sensor.door", "on")
+    await hass.async_block_till_done()
+    assert volume[0].data["volume_level"] == 0.4
+    assert play
+
+
+async def test_chime_skips_player_that_stays_unavailable(hass: HomeAssistant, calls):
+    play = async_mock_service(hass, "media_player", "play_media")
+    volume = async_mock_service(hass, "media_player", "volume_set")
+    turn_on = async_mock_service(hass, "media_player", "turn_on")
+    hass.states.async_set("binary_sensor.door", "off")
+    hass.states.async_set("media_player.apple_tv", "unavailable")
+    await setup(hass, CHIME_APPLE_TV)
+    hass.states.async_set("binary_sensor.door", "on")
+    for _ in range(5):
+        await asyncio.sleep(0)
+    assert turn_on
+    assert not play
+    later(hass, 10)
     await hass.async_block_till_done()
     assert not volume
     assert not play
