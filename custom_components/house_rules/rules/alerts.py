@@ -8,6 +8,7 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
+from homeassistant.const import STATE_OFF, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import CALLBACK_TYPE, Event, State, callback
 from homeassistant.util import dt as dt_util
 
@@ -237,12 +238,14 @@ async def play(
     """Play a sound on a media player (or run a script), at a volume restored afterwards. Never raises."""
     manager = rule.manager
     st = rule.state(player)
-    before = st.attributes.get("volume_level") if st else None
-    if volume is not None:
+    # An unavailable / off player (e.g. an Apple TV that dropped off) rejects volume_set and play_media.
+    ready = st is not None and st.state not in (STATE_UNAVAILABLE, STATE_UNKNOWN, STATE_OFF)
+    before = st.attributes.get("volume_level") if ready else None
+    if volume is not None and ready:
         await manager.call("media_player", "volume_set", {"entity_id": player, "volume_level": volume})
     if script:
         ok = await manager.call("script", "turn_on", {"entity_id": script}, blocking=False)
-    elif media:
+    elif media and ready:
         ok = await manager.call(
             "media_player",
             "play_media",

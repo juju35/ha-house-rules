@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.7 - 2026-11-25
+
+### Fixes
+- Chimes and alert sounds: a media player that is unavailable, unknown or off (e.g. an Apple TV that dropped off the network) is skipped before `volume_set` and `play_media`, instead of failing the call and logging a warning each time. A `script` chime still runs.
+
 ## 1.8.6 - 2026-11-24
 
 ### Maintenance

@@ -1081,3 +1081,32 @@ rules:
     later(hass, 70)
     await hass.async_block_till_done()
     assert not manager.rules["hallway"].claimed and not calls["light.turn_off"], "on by hand during the nap: left on"
+
+
+async def test_chime_skips_unavailable_player(hass: HomeAssistant, calls):
+    play = async_mock_service(hass, "media_player", "play_media")
+    volume = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("binary_sensor.door", "off")
+    hass.states.async_set("media_player.apple_tv", "unavailable")
+    await setup(
+        hass,
+        """
+rules:
+  - id: chime
+    type: sensor_chime
+    trigger: {entity_id: binary_sensor.door}
+    media_player: media_player.apple_tv
+    media: media-source://chime.mp3
+    volume: 0.4
+""",
+    )
+    hass.states.async_set("binary_sensor.door", "on")
+    await hass.async_block_till_done()
+    assert not volume
+    assert not play
+    hass.states.async_set("binary_sensor.door", "off")
+    hass.states.async_set("media_player.apple_tv", "off")
+    hass.states.async_set("binary_sensor.door", "on")
+    await hass.async_block_till_done()
+    assert not volume
+    assert not play
