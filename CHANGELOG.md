@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.7 - 2026-11-25
+
+### Fixes
+- Chimes and alert sounds: a media player that is unavailable, unknown or off (e.g. an Apple TV that dropped off the network) is first woken with `media_player.turn_on`, then given up to 10 s to come back. If it is still not there, `volume_set` and `play_media` are skipped instead of failing and logging a warning each time. A `script` chime still runs.
+
 ## 1.8.6 - 2026-11-24
 
 ### Maintenance

@@ -8,7 +8,9 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
+from homeassistant.const import STATE_OFF, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import CALLBACK_TYPE, Event, State, callback
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from ..const import LEAK_GUARD, SENSOR_CHIME, SENSOR_FLASH, ST_ALERT, ST_ARMED, ST_IDLE, ST_WAITING
@@ -231,18 +233,58 @@ class SensorFlash(Rule):
         }
 
 
+# How long a sleeping or disconnected player is given to come back after turn_on.
+WAKE_TIMEOUT = 10.0
+
+
+def _ready(st: State | None) -> bool:
+    """An unavailable / off player (e.g. an Apple TV that dropped off) rejects volume_set and play_media."""
+    return st is not None and st.state not in (STATE_UNAVAILABLE, STATE_UNKNOWN, STATE_OFF)
+
+
+async def wake(rule: Rule, player: str) -> State | None:
+    """Turn a player that is off or unavailable on, and wait for it to come back. Returns its state."""
+    st = rule.state(player)
+    if st is None or _ready(st):
+        return st
+    done = asyncio.Event()
+
+    @callback
+    def _changed(event: Event) -> None:
+        if _ready(event.data.get("new_state")):
+            done.set()
+
+    @callback
+    def _timeout(_now: datetime) -> None:
+        done.set()
+
+    unsubs = [
+        async_track_state_change_event(rule.hass, [player], _changed),
+        async_call_later(rule.hass, WAKE_TIMEOUT, _timeout),
+    ]
+    try:
+        await rule.manager.call("media_player", "turn_on", {"entity_id": player}, blocking=False)
+        if not _ready(rule.state(player)):
+            await done.wait()
+    finally:
+        for unsub in unsubs:
+            unsub()
+    return rule.state(player)
+
+
 async def play(
     rule: Rule, player: str, media: str | None, script: str | None, volume: float | None = None, duration: float = 20.0
 ) -> bool:
     """Play a sound on a media player (or run a script), at a volume restored afterwards. Never raises."""
     manager = rule.manager
-    st = rule.state(player)
-    before = st.attributes.get("volume_level") if st else None
-    if volume is not None:
+    st = await wake(rule, player)
+    ready = _ready(st)
+    before = st.attributes.get("volume_level") if ready else None
+    if volume is not None and ready:
         await manager.call("media_player", "volume_set", {"entity_id": player, "volume_level": volume})
     if script:
         ok = await manager.call("script", "turn_on", {"entity_id": script}, blocking=False)
-    elif media:
+    elif media and ready:
         ok = await manager.call(
             "media_player",
             "play_media",
