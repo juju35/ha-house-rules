@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.8 - 2026-11-27
+
+### Fixes
+- Tiles have the 10 px corner radius shared by the ha-* cards.
+- Illustrated header (cards and panel): the ground bar is 10 px thick, like on the other ha-* cards.
+
 ## 1.8.7 - 2026-11-25
 
 ### Fixes

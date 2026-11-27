@@ -13,8 +13,8 @@ export const HR_CSS = `
   :host { display: block; }
   ha-card { overflow: hidden; }
   .hdr { position: relative; height: 90px; overflow: hidden; background: var(--hr-sky); }
-  .hdr .hr-scene { position: absolute; right: 16px; bottom: 5px; }
-  .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--hr-ground); }
+  .hdr .hr-scene { position: absolute; right: 16px; bottom: 10px; }
+  .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: var(--hr-ground); }
   .hdrc { position: absolute; left: 16px; top: 16px; right: 16px; display: flex; align-items: flex-start; gap: 12px; }
   .hdr.has-zoom .hdrc { right: 36px; }
   .zoom { all: unset; position: absolute; z-index: 2; top: 5px; right: 5px; cursor: pointer; width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box;
@@ -34,7 +34,7 @@ export const HR_CSS = `
   .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
   .body { padding: 16px; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .tile { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: var(--hr-tile); min-width: 0; }
+  .tile { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px; background: var(--hr-tile); min-width: 0; }
   .tname { font-weight: 700; font-size: 14px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-text-color); }
   .tstate { font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .badge { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px var(--hr-tile); }

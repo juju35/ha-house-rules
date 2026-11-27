@@ -4,8 +4,8 @@ export const HRP_CSS = `
   :host { display: block; height: 100%; background: var(--primary-background-color); color: var(--primary-text-color); }
   .page { min-height: 100%; }
   .hdr { position: relative; height: 96px; overflow: hidden; background: var(--hr-sky); container-type: inline-size; }
-  .hdr .hr-scene { position: absolute; right: 24px; bottom: 5px; opacity: .9; }
-  .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--hr-ground); }
+  .hdr .hr-scene { position: absolute; right: 24px; bottom: 10px; opacity: .9; }
+  .hdr .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: var(--hr-ground); }
   .hdrc { position: absolute; left: 16px; right: 24px; top: 22px; display: flex; align-items: center; gap: 12px; }
   .hdrc .row { margin-right: min(360px, 30cqw); flex-shrink: 0; }
   .hdrc .grow > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -69,7 +69,7 @@ export const HRP_CSS = `
   .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr)); gap: 20px; align-items: start; }
   .grid2.tight { gap: 10px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-  .tile { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: var(--hr-tile); min-width: 0; }
+  .tile { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px; background: var(--hr-tile); min-width: 0; }
   .rrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--hr-tile); }
   .rrow .grow { flex: 1; min-width: 0; }
   .rrow .acts { display: flex; align-items: center; gap: 8px; flex: none; }

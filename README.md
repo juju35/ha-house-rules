@@ -128,6 +128,8 @@ The cards are added to the dashboard resources automatically (`/house_rules_stat
 | YAML | The whole `house_rules.yaml`, as written, editable: saving checks the YAML and every rule first, keeps a `.bak`, refuses a file changed meanwhile and restarts only the changed rules. Without the file: the stored configuration as YAML (read only, copy) |
 | Settings | Configuration source (YAML / storage, reload, switch to YAML), global conditions, notification target, import |
 
+Editing rules, the YAML, the import and the settings is for administrators. **+15 min** and **turn off** on a running timer or a room lit by presence are open to every user, like the entities' own switches on a dashboard.
+
 ### house_rules.yaml
 
 Three sections: `settings`, `rooms` and `rules`. Each can be moved to its own file with `!include file.yaml`, and `rules` can be spread over a folder with `!include_dir_merge_list folder` (one list per file). `!secret` works anywhere.
