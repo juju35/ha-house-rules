@@ -13,7 +13,8 @@ export const HRP_CSS = `
   .page.narrow .hdrc .menu { display: inline-flex; }
   /* By the width of the panel, not of the window: the sidebar open leaves less room. */
   @container (max-width: 760px) { .hdrc .row { margin-right: 0; } .hdr .hr-scene { opacity: .35; } }
-  @container (max-width: 480px) { .hdrc .row .pill { display: none; } }
+  /* Too narrow to keep the scene off the title and the round buttons: the header keeps its sky and ground only. */
+  @container (max-width: 480px) { .hdrc .row .pill { display: none; } .hdr .hr-scene { display: none; } }
   .tabs { display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 24px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
   .tab { flex-shrink: 0; padding: 12px 4px; margin-right: 24px; font-family: inherit; font-weight: 600; font-size: 14px; color: var(--secondary-text-color); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
   .tab.on { color: var(--primary-text-color); font-weight: 700; border-bottom-color: var(--primary-color); }
@@ -101,7 +102,10 @@ export const HRP_CSS = `
   .rbtn.plain { border: 0; background: transparent; }
   .rbtn[disabled] { opacity: .35; cursor: default; }
   .rbtn ha-icon { --mdc-icon-size: 18px; }
-  .banner { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 16px; border-radius: 14px; background: var(--hr-red-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hr-red) 35%, transparent); }
+  .banner { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 16px; border-radius: 14px; background: var(--hr-red-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hr-red) 35%, transparent); }
+  /* The text keeps at least 200 px: on a narrow panel the buttons drop to their own line instead of squeezing it. */
+  .banner > .grow { flex: 1 1 200px; }
+  .banner > .row { flex-wrap: wrap; margin-left: auto; }
   .note { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--primary-color) 14%, transparent); font-size: 13px; }
   .note.red { background: var(--hr-red-bg); color: var(--hr-red); }
   .note ha-icon { --mdc-icon-size: 16px; }

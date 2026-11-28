@@ -1,7 +1,7 @@
 // House Rules sidebar panel (administrators): Activity, Rules, Rooms, Journal, Settings.
 // Plain web component (ES modules in src/house-rules-panel/, assembled by scripts/build-frontend.mjs). Data: house_rules/subscribe; writes: house_rules/* WebSocket commands.
 // The panel draws its own content (it does not embed the Lovelace cards).
-export const HOUSE_RULES_PANEL_VERSION = '1.8.8';
+export const HOUSE_RULES_PANEL_VERSION = '1.8.9';
 
 // Rooms tab: the sections of a room (as on Smart Comfort's Rooms tab), the entities each field takes, the list fields.
 export const HRP_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
