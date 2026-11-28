@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.9 - 2026-11-28
+
+### Fixes
+- Panel on a phone: an active alert no longer squeezes its name into a narrow column — the Snooze / Acknowledge buttons move to their own line when the panel is too narrow.
+- Panel on a phone (under 480 px): the illustrated scene is hidden so it no longer overlaps the title and the round buttons.
+
 ## 1.8.8 - 2026-11-27
 
 ### Fixes

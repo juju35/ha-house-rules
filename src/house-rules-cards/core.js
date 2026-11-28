@@ -1,6 +1,6 @@
 import { HR_STRINGS } from "./i18n/strings.js";
 
-export const HR_VERSION = '1.8.8';
+export const HR_VERSION = '1.8.9';
 
 
 export function hrLang(hass) {
